@@ -1,0 +1,36 @@
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <div>
+        <h1>MediServi</h1>
+        <p>Marketplace de citas medicas</p>
+      </div>
+    </div>
+    <nav class="menu">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Resumen</a>
+      <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
+      <a routerLink="/categorias" routerLinkActive="active">Categorias</a>
+      <a routerLink="/especialidades" routerLinkActive="active">Especialidades</a>
+      <a routerLink="/profesionales" routerLinkActive="active">Profesionales</a>
+      <a routerLink="/servicios" routerLinkActive="active">Servicios</a>
+      <a routerLink="/citas" routerLinkActive="active">Citas</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <h4>MediServi Centro Clinico Digital</h4>
+      <p>Atencion ambulatoria, teleconsulta y seguimiento familiar con enfoque preventivo.</p>
+    </div>
+    <div>
+      <p><strong>Contacto:</strong> +506 2200-1122</p>
+      <p><strong>Correo:</strong> admisiones@mediservi.cr</p>
+      <p class="note">Si presentas una emergencia, acude al servicio de urgencias mas cercano.</p>
+    </div>
+  </footer>
+</div>

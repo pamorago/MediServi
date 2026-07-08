@@ -55,6 +55,7 @@ async function main() {
         password: await bcrypt.hash("Cliente5678!", 10),
         telefono: "88334455",
         rol: "CLIENTE",
+        estado: "INACTIVO",
       },
       {
         nombre: "Laura",
@@ -80,6 +81,22 @@ async function main() {
         telefono: "70778899",
         rol: "PROFESIONAL",
       },
+      {
+        nombre: "Jorge",
+        apellidos: "Ramírez Soto",
+        email: "jorge.ramirez@mediservi.com",
+        password: await bcrypt.hash("Pro3456!", 10),
+        telefono: "70661122",
+        rol: "PROFESIONAL",
+      },
+      {
+        nombre: "Elena",
+        apellidos: "Quesada Rojas",
+        email: "elena.quesada@mediservi.com",
+        password: await bcrypt.hash("Pro7890!", 10),
+        telefono: "70553344",
+        rol: "PROFESIONAL",
+      },
     ],
   });
 
@@ -92,6 +109,7 @@ async function main() {
       { nombre: "Nutrición y Dietética", descripcion: "Planes alimentarios y orientación nutricional." },
       { nombre: "Dermatología", descripcion: "Diagnóstico y tratamiento de enfermedades de la piel." },
       { nombre: "Fisioterapia", descripcion: "Rehabilitación física y manejo del dolor." },
+      { nombre: "Cardiología", descripcion: "Prevención y control de riesgo cardiovascular." , estado: "INACTIVO"},
     ],
   });
 
@@ -104,6 +122,8 @@ async function main() {
       { nombre: "Nutrición Clínica", descripcion: "Soporte nutricional y planes alimentarios personalizados." },
       { nombre: "Dermatología Clínica", descripcion: "Tratamiento de afecciones dermatológicas." },
       { nombre: "Fisioterapia y Rehabilitación", descripcion: "Recuperación funcional y manejo del dolor crónico." },
+      { nombre: "Dermatología Estética", descripcion: "Protocolos de cuidado dermatológico no invasivo." },
+      { nombre: "Cardiología Clínica", descripcion: "Control integral de factores de riesgo cardiometabólico.", estado: "INACTIVO" },
     ],
   });
 
@@ -167,6 +187,38 @@ async function main() {
     },
   });
 
+  const perfilJorge = await prisma.perfilProfesional.create({
+    data: {
+      usuarioId: userMap["jorge.ramirez@mediservi.com"],
+      tituloProfesional: "Dermatólogo",
+      descripcion: "Dermatólogo clínico enfocado en diagnóstico temprano y manejo integral de enfermedades de la piel.",
+      aniosExperiencia: 9,
+      modalidad: "PRESENCIAL",
+      provincia: "Cartago",
+      canton: "Central",
+      distrito: "Oriental",
+      tarifaBase: 38000,
+      disponible: true,
+      imagenPerfil: "perfil-jorge.png",
+    },
+  });
+
+  const perfilElena = await prisma.perfilProfesional.create({
+    data: {
+      usuarioId: userMap["elena.quesada@mediservi.com"],
+      tituloProfesional: "Fisioterapeuta",
+      descripcion: "Fisioterapeuta con enfoque en rehabilitación funcional, recuperación postquirúrgica y dolor crónico.",
+      aniosExperiencia: 7,
+      modalidad: "MIXTA",
+      provincia: "San José",
+      canton: "Escazú",
+      distrito: "San Rafael",
+      tarifaBase: 28000,
+      disponible: false,
+      imagenPerfil: "perfil-elena.png",
+    },
+  });
+
   // ── 7. Especialidades por profesional ────────────────────────────────────
   await prisma.especialidadProfesional.createMany({
     data: [
@@ -174,6 +226,10 @@ async function main() {
       { perfilProfesionalId: perfilLaura.id, especialidadId: specMap["Pediatría"] },
       { perfilProfesionalId: perfilPedro.id, especialidadId: specMap["Psicología Clínica"] },
       { perfilProfesionalId: perfilMaria.id, especialidadId: specMap["Nutrición Clínica"] },
+      { perfilProfesionalId: perfilJorge.id, especialidadId: specMap["Dermatología Clínica"] },
+      { perfilProfesionalId: perfilJorge.id, especialidadId: specMap["Dermatología Estética"] },
+      { perfilProfesionalId: perfilElena.id, especialidadId: specMap["Fisioterapia y Rehabilitación"] },
+      { perfilProfesionalId: perfilElena.id, especialidadId: specMap["Cardiología Clínica"] },
     ],
   });
 
@@ -250,6 +306,55 @@ async function main() {
     },
   });
 
+  const svcConsultaDermatologia = await prisma.servicio.create({
+    data: {
+      perfilProfesionalId: perfilJorge.id,
+      categoriaId: catMap["Dermatología"],
+      nombre: "Consulta dermatológica",
+      descripcion: "Evaluación diagnóstica de lesiones cutáneas, acné, dermatitis y seguimiento terapéutico.",
+      precio: 38000,
+      duracionMinutos: 45,
+      modalidad: "PRESENCIAL",
+    },
+  });
+
+  const svcControlDermatologia = await prisma.servicio.create({
+    data: {
+      perfilProfesionalId: perfilJorge.id,
+      categoriaId: catMap["Dermatología"],
+      nombre: "Control dermatológico",
+      descripcion: "Cita de control para ajuste de tratamiento y evolución clínica.",
+      precio: 25000,
+      duracionMinutos: 30,
+      modalidad: "VIRTUAL",
+      estado: "INACTIVO",
+    },
+  });
+
+  const svcFisioterapiaFuncional = await prisma.servicio.create({
+    data: {
+      perfilProfesionalId: perfilElena.id,
+      categoriaId: catMap["Fisioterapia"],
+      nombre: "Sesión de fisioterapia funcional",
+      descripcion: "Rehabilitación personalizada para recuperación de movilidad, fuerza y equilibrio post lesión.",
+      precio: 28000,
+      duracionMinutos: 60,
+      modalidad: "PRESENCIAL",
+    },
+  });
+
+  const svcTerapiaDolor = await prisma.servicio.create({
+    data: {
+      perfilProfesionalId: perfilElena.id,
+      categoriaId: catMap["Fisioterapia"],
+      nombre: "Terapia para manejo del dolor",
+      descripcion: "Intervención para dolor musculoesquelético crónico con ejercicios y educación terapéutica.",
+      precio: 24000,
+      duracionMinutos: 50,
+      modalidad: "MIXTA",
+    },
+  });
+
   // ── 9. Especialidades por servicio ────────────────────────────────────────
   await prisma.especialidadServicio.createMany({
     data: [
@@ -259,6 +364,10 @@ async function main() {
       { servicioId: svcTerapiaGrupal.id, especialidadId: specMap["Psicología Clínica"] },
       { servicioId: svcConsultaNutricional.id, especialidadId: specMap["Nutrición Clínica"] },
       { servicioId: svcSeguimientoNutricional.id, especialidadId: specMap["Nutrición Clínica"] },
+      { servicioId: svcConsultaDermatologia.id, especialidadId: specMap["Dermatología Clínica"] },
+      { servicioId: svcControlDermatologia.id, especialidadId: specMap["Dermatología Estética"] },
+      { servicioId: svcFisioterapiaFuncional.id, especialidadId: specMap["Fisioterapia y Rehabilitación"] },
+      { servicioId: svcTerapiaDolor.id, especialidadId: specMap["Cardiología Clínica"] },
     ],
   });
 
@@ -348,6 +457,112 @@ async function main() {
     },
   });
 
+  const citaPendiente2 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["ana@mediservi.com"],
+      servicioId: svcConsultaDermatologia.id,
+      perfilProfesionalId: perfilJorge.id,
+      fechaCita: fecha(5),
+      horaInicio: hora(8),
+      horaFin: hora(8, 45),
+      modalidad: "PRESENCIAL",
+      montoEstimado: 38000,
+      estado: "PENDIENTE",
+      comentarioCliente: "Revisión por manchas nuevas en la piel.",
+    },
+  });
+
+  const citaPendiente3 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["carlos@mediservi.com"],
+      servicioId: svcFisioterapiaFuncional.id,
+      perfilProfesionalId: perfilElena.id,
+      fechaCita: fecha(8),
+      horaInicio: hora(15),
+      horaFin: hora(16),
+      modalidad: "PRESENCIAL",
+      montoEstimado: 28000,
+      estado: "PENDIENTE",
+      comentarioCliente: "Rehabilitación de rodilla derecha.",
+    },
+  });
+
+  const citaAceptada2 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["ana@mediservi.com"],
+      servicioId: svcTerapiaDolor.id,
+      perfilProfesionalId: perfilElena.id,
+      fechaCita: fecha(10),
+      horaInicio: hora(11),
+      horaFin: hora(11, 50),
+      modalidad: "MIXTA",
+      montoEstimado: 24000,
+      estado: "ACEPTADA",
+      comentarioCliente: "Dolor lumbar recurrente post jornada laboral.",
+    },
+  });
+
+  const citaCompletada3 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["carlos@mediservi.com"],
+      servicioId: svcConsultaGeneral.id,
+      perfilProfesionalId: perfilLaura.id,
+      fechaCita: fecha(-15),
+      horaInicio: hora(13),
+      horaFin: hora(13, 45),
+      modalidad: "PRESENCIAL",
+      montoEstimado: 25000,
+      estado: "COMPLETADA",
+      comentarioCliente: "Control de presión arterial y síntomas de fatiga.",
+      comentarioProfesional: "Se solicita laboratorio de control y ajustes en hábitos de sueño.",
+    },
+  });
+
+  const citaCancelada2 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["ana@mediservi.com"],
+      servicioId: svcSeguimientoNutricional.id,
+      perfilProfesionalId: perfilMaria.id,
+      fechaCita: fecha(-1),
+      horaInicio: hora(17),
+      horaFin: hora(17, 30),
+      modalidad: "VIRTUAL",
+      montoEstimado: 15000,
+      estado: "CANCELADA",
+      comentarioCliente: "No podré asistir por viaje laboral.",
+    },
+  });
+
+  const citaPendiente4 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["carlos@mediservi.com"],
+      servicioId: svcSesionPsicologica.id,
+      perfilProfesionalId: perfilPedro.id,
+      fechaCita: fecha(12),
+      horaInicio: hora(9),
+      horaFin: hora(9, 50),
+      modalidad: "VIRTUAL",
+      montoEstimado: 40000,
+      estado: "PENDIENTE",
+      comentarioCliente: "Seguimiento por estrés y ansiedad.",
+    },
+  });
+
+  const citaPendiente5 = await prisma.cita.create({
+    data: {
+      clienteId: userMap["ana@mediservi.com"],
+      servicioId: svcConsultaNutricional.id,
+      perfilProfesionalId: perfilMaria.id,
+      fechaCita: fecha(14),
+      horaInicio: hora(10),
+      horaFin: hora(11),
+      modalidad: "MIXTA",
+      montoEstimado: 20000,
+      estado: "PENDIENTE",
+      comentarioCliente: "Quiero mejorar hábitos alimentarios para control metabólico.",
+    },
+  });
+
   // ── 11. Historial de citas ────────────────────────────────────────────────
   await prisma.historialCita.createMany({
     data: [
@@ -393,6 +608,34 @@ async function main() {
         motivo: "Sesión de seguimiento realizada.",
         cambiadoPorId: perfilMaria.usuarioId,
       },
+      {
+        citaId: citaAceptada2.id,
+        estadoAnterior: "PENDIENTE",
+        estadoNuevo: "ACEPTADA",
+        motivo: "Profesional confirma espacio en agenda.",
+        cambiadoPorId: perfilElena.usuarioId,
+      },
+      {
+        citaId: citaCancelada2.id,
+        estadoAnterior: "PENDIENTE",
+        estadoNuevo: "CANCELADA",
+        motivo: "Cliente reporta imposibilidad de conexión.",
+        cambiadoPorId: userMap["ana@mediservi.com"],
+      },
+      {
+        citaId: citaCompletada3.id,
+        estadoAnterior: "PENDIENTE",
+        estadoNuevo: "ACEPTADA",
+        motivo: "Se confirma cita médica de control.",
+        cambiadoPorId: perfilLaura.usuarioId,
+      },
+      {
+        citaId: citaCompletada3.id,
+        estadoAnterior: "ACEPTADA",
+        estadoNuevo: "COMPLETADA",
+        motivo: "Consulta finalizada con éxito.",
+        cambiadoPorId: perfilLaura.usuarioId,
+      },
     ],
   });
 
@@ -410,6 +653,12 @@ async function main() {
         perfilProfesionalId: perfilMaria.id,
         puntuacion: 4,
         comentario: "Muy buena orientación nutricional. El plan es detallado y fácil de seguir.",
+      },
+      {
+        citaId: citaCompletada3.id,
+        perfilProfesionalId: perfilLaura.id,
+        puntuacion: 5,
+        comentario: "Excelente seguimiento clínico y recomendaciones claras para mejorar mis indicadores.",
       },
     ],
   });

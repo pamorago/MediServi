@@ -1,0 +1,124 @@
+:host {
+  display: block;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 2rem 1rem 3rem;
+}
+
+.topbar {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 18px;
+  background: var(--color-surface);
+  backdrop-filter: blur(6px);
+}
+
+.brand {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.brand h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.brand p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-subtle);
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--font-display);
+  background: linear-gradient(145deg, var(--color-primary), var(--color-secondary));
+  box-shadow: 0 10px 22px rgba(47, 122, 105, 0.24);
+}
+
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.menu a {
+  text-decoration: none;
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.menu a:hover {
+  border-color: var(--color-outline);
+  color: var(--color-primary);
+}
+
+.menu a.active {
+  color: #224a40;
+  border-color: transparent;
+  background: linear-gradient(145deg, #dcefe8, #cfe4dc);
+}
+
+.content {
+  max-width: 1100px;
+  margin: 1rem auto 0;
+}
+
+.site-footer {
+  max-width: 1100px;
+  margin: 1.2rem auto 0;
+  padding: 1rem;
+  border: 1px solid var(--color-outline);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.site-footer h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.site-footer p {
+  margin: 0.4rem 0 0;
+  color: var(--color-subtle);
+}
+
+.site-footer .note {
+  color: #9a3412;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .site-footer {
+    grid-template-columns: 1fr;
+  }
+}
