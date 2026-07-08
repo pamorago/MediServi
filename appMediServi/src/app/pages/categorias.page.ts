@@ -25,13 +25,14 @@ import { Categoria } from '../core/models';
       </ul>
 
       <div class="toolbar">
-        <input [(ngModel)]="search" placeholder="Buscar por nombre" />
+        <input [(ngModel)]="search" (keydown.enter)="cargarCategorias()" placeholder="Buscar por nombre" />
         <select [(ngModel)]="estadoFiltro">
           <option value="">Todos los estados</option>
           <option value="ACTIVO">Activo</option>
           <option value="INACTIVO">Inactivo</option>
         </select>
         <button class="primary" (click)="cargarCategorias()">Aplicar filtros</button>
+        <button type="button" (click)="limpiarFiltros()">Limpiar</button>
       </div>
     </section>
 
@@ -176,6 +177,12 @@ export class CategoriasPageComponent implements OnInit {
         this.error = 'No fue posible actualizar la categoria.';
       },
     });
+  }
+
+  limpiarFiltros(): void {
+    this.search = '';
+    this.estadoFiltro = '';
+    this.cargarCategorias();
   }
 
   obtenerDetalleClinico(nombreCategoria: string): string {

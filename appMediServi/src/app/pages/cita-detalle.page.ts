@@ -14,8 +14,12 @@ import { Cita } from '../core/models';
       <p><strong>Cliente:</strong> {{ cita.cliente?.nombre }} {{ cita.cliente?.apellidos }}</p>
       <p><strong>Profesional:</strong> {{ cita.profesional?.usuario?.nombre }} {{ cita.profesional?.usuario?.apellidos }}</p>
       <p><strong>Servicio:</strong> {{ cita.servicio?.nombre }}</p>
-      <p><strong>Fecha:</strong> {{ cita.fechaCita | date: 'mediumDate' }}</p>
-      <p><strong>Hora:</strong> {{ cita.horaInicio }} - {{ cita.horaFin }}</p>
+      <p><strong>Fecha:</strong> {{ cita.fechaCita | date: 'MM/dd/yyyy' }}</p>
+      <p>
+        <strong>Hora:</strong>
+        {{ cita.horaInicio | date: 'hh:mm a' }} -
+        {{ cita.horaFin | date: 'hh:mm a' }}
+      </p>
       <p><strong>Modalidad:</strong> {{ cita.modalidad }}</p>
       <p><strong>Estado:</strong> {{ cita.estado }}</p>
       <p><strong>Comentario:</strong> {{ cita.comentarioCliente || 'Sin comentario' }}</p>

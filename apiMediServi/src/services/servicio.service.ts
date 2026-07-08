@@ -11,7 +11,7 @@ interface GetServiciosFilters {
 }
 
 const getAllServicios = async (filters: GetServiciosFilters = {}) => {
-  return prisma.servicio.findMany({
+  const servicios = await prisma.servicio.findMany({
     where: {
       nombre: filters.search ? { contains: filters.search } : undefined,
       categoriaId: filters.categoriaId,
@@ -32,8 +32,39 @@ const getAllServicios = async (filters: GetServiciosFilters = {}) => {
           usuario: true,
         },
       },
+      citas: {
+        where: {
+          resena: {
+            isNot: null,
+          },
+        },
+        select: {
+          resena: {
+            select: {
+              puntuacion: true,
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
+  });
+
+  return servicios.map((servicio) => {
+    const puntuaciones = servicio.citas
+      .map((cita) => cita.resena?.puntuacion)
+      .filter((valor): valor is number => typeof valor === 'number');
+
+    const totalEvaluaciones = puntuaciones.length;
+    const promedioEvaluacion = totalEvaluaciones
+      ? puntuaciones.reduce((acc, item) => acc + item, 0) / totalEvaluaciones
+      : null;
+
+    return {
+      ...servicio,
+      promedioEvaluacion,
+      totalEvaluaciones,
+    };
   });
 };
 
@@ -51,6 +82,24 @@ const getServicioById = async (id: number) => {
         include: {
           especialidad: true,
         },
+      },
+      citas: {
+        where: {
+          resena: {
+            isNot: null,
+          },
+        },
+        include: {
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellidos: true,
+            },
+          },
+          resena: true,
+        },
+        orderBy: { fechaCita: 'desc' },
       },
     },
   });

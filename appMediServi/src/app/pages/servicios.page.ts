@@ -17,8 +17,20 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
       </div>
       <p>Administracion de servicios con filtros por categoria, modalidad y rango de precio.</p>
 
+      <div class="summary">
+        <span>Total: {{ servicios.length }}</span>
+        <span>Activos: {{ contarPorEstado('ACTIVO') }}</span>
+        <span>Inactivos: {{ contarPorEstado('INACTIVO') }}</span>
+      </div>
+
       <div class="toolbar">
-        <input [(ngModel)]="search" placeholder="Buscar por nombre" />
+        <input [(ngModel)]="search" (keydown.enter)="aplicarFiltrosLocales()" placeholder="Buscar por nombre" />
+        <select [(ngModel)]="servicioSeleccionadoId">
+          <option [ngValue]="null">Todos los servicios</option>
+          <option *ngFor="let item of todosServicios" [ngValue]="item.id">
+            {{ item.nombre }}
+          </option>
+        </select>
         <select [(ngModel)]="categoriaFiltro">
           <option value="">Todas las categorias</option>
           <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
@@ -36,7 +48,8 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         </select>
         <input [(ngModel)]="precioMin" type="number" placeholder="Precio min" />
         <input [(ngModel)]="precioMax" type="number" placeholder="Precio max" />
-        <button class="primary" (click)="cargarServicios()">Aplicar</button>
+        <button class="primary" (click)="aplicarFiltrosLocales()">Aplicar filtros</button>
+        <button type="button" (click)="limpiarFiltros()">Limpiar</button>
       </div>
 
       <div class="table-wrap" *ngIf="!loading && !error">
@@ -50,6 +63,7 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
               <th>Precio</th>
               <th>Modalidad</th>
               <th>Estado</th>
+              <th>Evaluacion</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -60,12 +74,21 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
               <td>{{ servicio.perfil?.usuario?.nombre }} {{ servicio.perfil?.usuario?.apellidos }}</td>
               <td>{{ servicio.categoria?.nombre }}</td>
               <td>{{ servicio.precio }}</td>
-              <td>{{ servicio.modalidad }}</td>
-              <td>{{ servicio.estado }}</td>
+              <td><span class="pill modalidad">{{ servicio.modalidad }}</span></td>
+              <td><span class="pill" [class.off]="servicio.estado === 'INACTIVO'">{{ servicio.estado }}</span></td>
+              <td>
+                <ng-container *ngIf="servicio.totalEvaluaciones; else sinEvaluaciones">
+                  <strong>{{ servicio.promedioEvaluacion?.toFixed(1) }}/5</strong>
+                  <div class="muted">{{ servicio.totalEvaluaciones }} comentarios</div>
+                </ng-container>
+                <ng-template #sinEvaluaciones>
+                  <span class="muted">Sin evaluaciones</span>
+                </ng-template>
+              </td>
               <td class="actions">
                 <button (click)="editar(servicio)">Editar</button>
                 <button (click)="toggleEstado(servicio)">{{ servicio.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
-                <a [routerLink]="['/servicios', servicio.id]">Detalle</a>
+                <a class="detail-link" [routerLink]="['/servicios', servicio.id]">Detalle</a>
               </td>
             </tr>
           </tbody>
@@ -121,10 +144,65 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
       </form>
     </section>
   `,
+  styles: [
+    `
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 0.65rem;
+      }
+
+      .summary span {
+        border: 1px solid var(--color-outline);
+        border-radius: 999px;
+        background: var(--color-soft);
+        font-size: 0.82rem;
+        padding: 0.2rem 0.55rem;
+      }
+
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2d5b4f;
+        background: #e3f3ee;
+      }
+
+      .pill.off {
+        color: #7a1c1c;
+        background: #fbe6e6;
+      }
+
+      .pill.modalidad {
+        color: #234f45;
+        background: #edf7f3;
+      }
+
+      .detail-link {
+        color: #25695a;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .detail-link:hover {
+        color: #1d5649;
+        text-decoration: underline;
+      }
+
+      .muted {
+        color: var(--color-subtle);
+        font-size: 0.82rem;
+      }
+    `,
+  ],
 })
 export class ServiciosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
+  todosServicios: Servicio[] = [];
   servicios: Servicio[] = [];
   categorias: Categoria[] = [];
   profesionales: Profesional[] = [];
@@ -133,6 +211,7 @@ export class ServiciosPageComponent implements OnInit {
   error = '';
 
   search = '';
+  servicioSeleccionadoId: number | null = null;
   categoriaFiltro = '';
   modalidadFiltro = '';
   estadoFiltro = '';
@@ -165,17 +244,10 @@ export class ServiciosPageComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    const params: Record<string, string> = {};
-    if (this.search.trim()) params['search'] = this.search.trim();
-    if (this.categoriaFiltro) params['categoriaId'] = this.categoriaFiltro;
-    if (this.modalidadFiltro) params['modalidad'] = this.modalidadFiltro;
-    if (this.estadoFiltro) params['estado'] = this.estadoFiltro;
-    if (this.precioMin) params['precioMin'] = this.precioMin;
-    if (this.precioMax) params['precioMax'] = this.precioMax;
-
-    this.api.getServicios(params).subscribe({
+    this.api.getServicios().subscribe({
       next: (data) => {
-        this.servicios = data;
+        this.todosServicios = data;
+        this.aplicarFiltrosLocales();
         this.loading = false;
       },
       error: () => {
@@ -183,6 +255,41 @@ export class ServiciosPageComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  aplicarFiltrosLocales(): void {
+    const search = this.search.trim().toLowerCase();
+    const precioMin = this.precioMin ? Number(this.precioMin) : null;
+    const precioMax = this.precioMax ? Number(this.precioMax) : null;
+
+    this.servicios = this.todosServicios.filter((servicio) => {
+      const precio = Number(servicio.precio);
+
+      const matchSearch = !search || servicio.nombre.toLowerCase().includes(search);
+      const matchServicio = !this.servicioSeleccionadoId || servicio.id === this.servicioSeleccionadoId;
+      const matchCategoria = !this.categoriaFiltro || Number(servicio.categoriaId) === Number(this.categoriaFiltro);
+      const matchModalidad = !this.modalidadFiltro || servicio.modalidad === this.modalidadFiltro;
+      const matchEstado = !this.estadoFiltro || servicio.estado === this.estadoFiltro;
+      const matchPrecioMin = precioMin === null || precio >= precioMin;
+      const matchPrecioMax = precioMax === null || precio <= precioMax;
+
+      return matchSearch && matchServicio && matchCategoria && matchModalidad && matchEstado && matchPrecioMin && matchPrecioMax;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.search = '';
+    this.servicioSeleccionadoId = null;
+    this.categoriaFiltro = '';
+    this.modalidadFiltro = '';
+    this.estadoFiltro = '';
+    this.precioMin = '';
+    this.precioMax = '';
+    this.aplicarFiltrosLocales();
+  }
+
+  contarPorEstado(estado: 'ACTIVO' | 'INACTIVO'): number {
+    return this.servicios.filter((s) => s.estado === estado).length;
   }
 
   agregarEspecialidad(): void {
@@ -222,9 +329,18 @@ export class ServiciosPageComponent implements OnInit {
       return;
     }
 
+    const payload: ServicioPayload = {
+      ...this.form,
+      perfilProfesionalId: Number(this.form.perfilProfesionalId),
+      categoriaId: Number(this.form.categoriaId),
+      precio: Number(this.form.precio),
+      duracionMinutos: Number(this.form.duracionMinutos),
+      especialidadIds: (this.form.especialidadIds || []).map((id) => Number(id)).filter((id) => id > 0),
+    };
+
     const request = this.editandoId
-      ? this.api.updateServicio(this.editandoId, this.form)
-      : this.api.createServicio(this.form);
+      ? this.api.updateServicio(this.editandoId, payload)
+      : this.api.createServicio(payload);
 
     request.subscribe({
       next: () => {

@@ -17,8 +17,20 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
       </div>
       <p>Gestion de profesionales con filtros, formulario de registro/edicion y cambio de disponibilidad.</p>
 
+      <div class="summary">
+        <span>Total: {{ profesionales.length }}</span>
+        <span>Disponibles: {{ contarPorDisponibilidad(true) }}</span>
+        <span>No disponibles: {{ contarPorDisponibilidad(false) }}</span>
+      </div>
+
       <div class="toolbar">
-        <input [(ngModel)]="search" placeholder="Buscar por nombre" />
+        <input [(ngModel)]="search" (keydown.enter)="aplicarFiltrosLocales()" placeholder="Buscar por nombre" />
+        <select [(ngModel)]="profesionalSeleccionadoId">
+          <option [ngValue]="null">Todos los profesionales</option>
+          <option *ngFor="let item of todosProfesionales" [ngValue]="item.id">
+            {{ item.usuario.nombre }} {{ item.usuario.apellidos }}
+          </option>
+        </select>
         <select [(ngModel)]="modalidadFiltro">
           <option value="">Todas las modalidades</option>
           <option value="VIRTUAL">Virtual</option>
@@ -26,11 +38,12 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
           <option value="MIXTA">Mixta</option>
         </select>
         <select [(ngModel)]="disponibleFiltro">
-          <option value="">Disponibilidad</option>
+          <option value="">Todas las disponibilidades</option>
           <option value="true">Disponible</option>
           <option value="false">No disponible</option>
         </select>
-        <button class="primary" (click)="cargarProfesionales()">Aplicar</button>
+        <button class="primary" (click)="aplicarFiltrosLocales()">Aplicar filtros</button>
+        <button type="button" (click)="limpiarFiltros()">Limpiar</button>
       </div>
 
       <div class="table-wrap" *ngIf="!loading && !error">
@@ -51,13 +64,17 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
               <td><span class="record-id">PRO-{{ profesional.id }}</span></td>
               <td>{{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}</td>
               <td>{{ profesional.tituloProfesional }}</td>
-              <td>{{ profesional.modalidad }}</td>
+              <td><span class="pill modalidad">{{ profesional.modalidad }}</span></td>
               <td>{{ profesional.tarifaBase }}</td>
-              <td>{{ profesional.disponible ? 'Disponible' : 'No disponible' }}</td>
+              <td>
+                <span class="pill" [class.off]="!profesional.disponible">
+                  {{ profesional.disponible ? 'Disponible' : 'No disponible' }}
+                </span>
+              </td>
               <td class="actions">
                 <button (click)="editar(profesional)">Editar</button>
                 <button (click)="toggleDisponibilidad(profesional)">Cambiar disponibilidad</button>
-                <a [routerLink]="['/profesionales', profesional.id]">Detalle</a>
+                <a class="detail-link" [routerLink]="['/profesionales', profesional.id]">Detalle</a>
               </td>
             </tr>
           </tbody>
@@ -114,16 +131,67 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
       </form>
     </section>
   `,
+  styles: [
+    `
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 0.65rem;
+      }
+
+      .summary span {
+        border: 1px solid var(--color-outline);
+        border-radius: 999px;
+        background: var(--color-soft);
+        font-size: 0.82rem;
+        padding: 0.2rem 0.55rem;
+      }
+
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2d5b4f;
+        background: #e3f3ee;
+      }
+
+      .pill.off {
+        color: #7a1c1c;
+        background: #fbe6e6;
+      }
+
+      .pill.modalidad {
+        color: #234f45;
+        background: #edf7f3;
+      }
+
+      .detail-link {
+        color: #25695a;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .detail-link:hover {
+        color: #1d5649;
+        text-decoration: underline;
+      }
+    `,
+  ],
 })
 export class ProfesionalesPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
+  todosProfesionales: Profesional[] = [];
   profesionales: Profesional[] = [];
   especialidades: Especialidad[] = [];
   loading = false;
   error = '';
 
   search = '';
+  profesionalSeleccionadoId: number | null = null;
   modalidadFiltro = '';
   disponibleFiltro = '';
 
@@ -164,14 +232,10 @@ export class ProfesionalesPageComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    const params: Record<string, string> = {};
-    if (this.search.trim()) params['search'] = this.search.trim();
-    if (this.modalidadFiltro) params['modalidad'] = this.modalidadFiltro;
-    if (this.disponibleFiltro) params['disponible'] = this.disponibleFiltro;
-
-    this.api.getProfesionales(params).subscribe({
+    this.api.getProfesionales().subscribe({
       next: (data) => {
-        this.profesionales = data;
+        this.todosProfesionales = data;
+        this.aplicarFiltrosLocales();
         this.loading = false;
       },
       error: () => {
@@ -179,6 +243,33 @@ export class ProfesionalesPageComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  aplicarFiltrosLocales(): void {
+    const search = this.search.trim().toLowerCase();
+
+    this.profesionales = this.todosProfesionales.filter((profesional) => {
+      const nombreCompleto = `${profesional.usuario.nombre} ${profesional.usuario.apellidos}`.toLowerCase();
+      const matchSearch = !search || nombreCompleto.includes(search);
+      const matchProfesional = !this.profesionalSeleccionadoId || profesional.id === this.profesionalSeleccionadoId;
+      const matchModalidad = !this.modalidadFiltro || profesional.modalidad === this.modalidadFiltro;
+      const matchDisponible =
+        !this.disponibleFiltro || String(profesional.disponible) === this.disponibleFiltro;
+
+      return matchSearch && matchProfesional && matchModalidad && matchDisponible;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.search = '';
+    this.profesionalSeleccionadoId = null;
+    this.modalidadFiltro = '';
+    this.disponibleFiltro = '';
+    this.aplicarFiltrosLocales();
+  }
+
+  contarPorDisponibilidad(disponible: boolean): number {
+    return this.profesionales.filter((p) => p.disponible === disponible).length;
   }
 
   agregarEspecialidad(): void {

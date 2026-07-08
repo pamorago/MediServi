@@ -24,6 +24,12 @@ import { Usuario } from '../core/models';
 
       <div class="toolbar">
         <input [(ngModel)]="search" (keydown.enter)="aplicarFiltrosLocales()" placeholder="Buscar por nombre o correo" />
+        <select [(ngModel)]="usuarioSeleccionadoId">
+          <option [ngValue]="null">Todos los usuarios</option>
+          <option *ngFor="let item of todosUsuarios" [ngValue]="item.id">
+            {{ item.nombre }} {{ item.apellidos }}
+          </option>
+        </select>
         <select [(ngModel)]="rol">
           <option value="">Todos los roles</option>
           <option value="ADMINISTRADOR">Administrador</option>
@@ -114,11 +120,12 @@ import { Usuario } from '../core/models';
 export class UsuariosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
-  private todosUsuarios: Usuario[] = [];
+  todosUsuarios: Usuario[] = [];
   usuarios: Usuario[] = [];
   loading = false;
   error = '';
   search = '';
+  usuarioSeleccionadoId: number | null = null;
   rol = '';
   estado = '';
 
@@ -152,12 +159,14 @@ export class UsuariosPageComponent implements OnInit {
         usuario.email.toLowerCase().includes(search);
       const matchRol = !this.rol || usuario.rol === this.rol;
       const matchEstado = !this.estado || usuario.estado === this.estado;
-      return matchSearch && matchRol && matchEstado;
+      const matchUsuario = !this.usuarioSeleccionadoId || usuario.id === this.usuarioSeleccionadoId;
+      return matchSearch && matchRol && matchEstado && matchUsuario;
     });
   }
 
   limpiarFiltros(): void {
     this.search = '';
+    this.usuarioSeleccionadoId = null;
     this.rol = '';
     this.estado = '';
     this.aplicarFiltrosLocales();

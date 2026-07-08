@@ -7,9 +7,16 @@ interface GetCategoriasFilters {
 }
 
 const getAllCategorias = async (filters: GetCategoriasFilters = {}) => {
+  const normalizedSearch = filters.search?.trim();
+
   return prisma.categoriaServicio.findMany({
     where: {
-      nombre: filters.search ? { contains: filters.search } : undefined,
+      nombre: normalizedSearch
+        ? {
+            contains: normalizedSearch,
+            mode: "insensitive",
+          }
+        : undefined,
       estado: filters.estado,
     },
     orderBy: { createdAt: "desc" },

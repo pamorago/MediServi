@@ -20,7 +20,7 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
           <option [ngValue]="0">Seleccione cliente</option>
           <option *ngFor="let cliente of clientes" [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
         </select>
-        <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required (ngModelChange)="onProfesionalChange()">
+        <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required (ngModelChange)="onProfesionalChange($event)">
           <option [ngValue]="0">Seleccione profesional</option>
           <option *ngFor="let profesional of profesionales" [ngValue]="profesional.id">
             {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
@@ -231,8 +231,11 @@ export class CitasPageComponent implements OnInit {
     this.cargarCitas();
   }
 
-  onProfesionalChange(): void {
-    this.serviciosFiltrados = this.servicios.filter((servicio) => servicio.perfilProfesionalId === this.form.perfilProfesionalId);
+  onProfesionalChange(value: number | string): void {
+    this.form.perfilProfesionalId = Number(value || 0);
+    this.serviciosFiltrados = this.servicios.filter(
+      (servicio) => Number(servicio.perfilProfesionalId) === Number(this.form.perfilProfesionalId),
+    );
     this.form.servicioId = 0;
   }
 
@@ -262,7 +265,15 @@ export class CitasPageComponent implements OnInit {
       return;
     }
 
-    this.api.createCita(this.form).subscribe({
+    const payload: CitaPayload = {
+      ...this.form,
+      clienteId: Number(this.form.clienteId),
+      perfilProfesionalId: Number(this.form.perfilProfesionalId),
+      servicioId: Number(this.form.servicioId),
+      montoEstimado: Number(this.form.montoEstimado),
+    };
+
+    this.api.createCita(payload).subscribe({
       next: () => {
         this.form = {
           clienteId: 0,

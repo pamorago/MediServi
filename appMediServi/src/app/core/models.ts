@@ -44,6 +44,17 @@ export interface Cita {
   cliente?: Usuario;
   servicio?: Servicio;
   profesional?: Profesional;
+  resena?: Resena;
+}
+
+export interface Resena {
+  id: number;
+  citaId: number;
+  perfilProfesionalId: number;
+  puntuacion: number;
+  comentario: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Profesional {
@@ -74,6 +85,13 @@ export interface Servicio {
   estado: 'ACTIVO' | 'INACTIVO';
   categoria?: Categoria;
   perfil?: Profesional;
+  promedioEvaluacion?: number | null;
+  totalEvaluaciones?: number;
+  especialidades?: Array<{
+    especialidadId: number;
+    especialidad: Especialidad;
+  }>;
+  citas?: Cita[];
 }
 
 export interface ProfesionalPayload {
