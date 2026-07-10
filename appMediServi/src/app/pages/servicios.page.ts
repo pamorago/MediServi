@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from '../core/models';
@@ -104,45 +104,99 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         <span class="module-id">FORM-SER</span>
         <h3>{{ editandoId ? 'Editar servicio' : 'Crear servicio' }}</h3>
       </div>
-      <form (ngSubmit)="guardar()" class="form-grid">
-        <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required>
-          <option [ngValue]="0">Seleccione profesional</option>
-          <option *ngFor="let p of profesionales" [ngValue]="p.id">{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</option>
-        </select>
-        <select [(ngModel)]="form.categoriaId" name="categoriaId" required>
-          <option [ngValue]="0">Seleccione categoria</option>
-          <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
-        </select>
-        <input [(ngModel)]="form.nombre" name="nombre" placeholder="Nombre" required />
-        <input [(ngModel)]="form.precio" type="number" name="precio" placeholder="Precio" required min="1" />
-        <input [(ngModel)]="form.duracionMinutos" type="number" name="duracionMinutos" placeholder="Duracion" required min="1" />
-        <select [(ngModel)]="form.modalidad" name="modalidad" required>
-          <option value="VIRTUAL">Virtual</option>
-          <option value="PRESENCIAL">Presencial</option>
-          <option value="MIXTA">Mixta</option>
-        </select>
-        <select [(ngModel)]="form.estado" name="estado" required>
-          <option value="ACTIVO">Activo</option>
-          <option value="INACTIVO">Inactivo</option>
-        </select>
-        <select [(ngModel)]="especialidadSeleccionada" name="especialidadSeleccionada">
-          <option [ngValue]="null">Agregar especialidad</option>
-          <option *ngFor="let item of especialidades" [ngValue]="item.id">{{ item.nombre }}</option>
-        </select>
-        <button type="button" (click)="agregarEspecialidad()">Agregar especialidad</button>
-        <textarea class="full" [(ngModel)]="form.descripcion" name="descripcion" placeholder="Descripcion" rows="3" required></textarea>
+      <form (ngSubmit)="guardar(formSer)" #formSer="ngForm" class="form-grid" novalidate>
 
-        <div class="full">
-          <strong>Especialidades asociadas:</strong>
-          <span *ngFor="let id of form.especialidadIds" style="margin-right: 0.4rem">#{{ id }}</span>
+        <div class="field">
+          <label>Profesional *</label>
+          <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profSer="ngModel">
+            <option [ngValue]="0">— Seleccione profesional —</option>
+            <option *ngFor="let p of profesionales" [ngValue]="p.id">{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</option>
+          </select>
+          <span class="field-error" *ngIf="profSer.invalid && profSer.touched">El profesional es obligatorio.</span>
+        </div>
+
+        <div class="field">
+          <label>Categoría *</label>
+          <select [(ngModel)]="form.categoriaId" name="categoriaId" required #catSer="ngModel">
+            <option [ngValue]="0">— Seleccione categoría —</option>
+            <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
+          </select>
+          <span class="field-error" *ngIf="catSer.invalid && catSer.touched">La categoría es obligatoria.</span>
+        </div>
+
+        <div class="field">
+          <label>Nombre del servicio *</label>
+          <input [(ngModel)]="form.nombre" name="nombre" required #nombreSer="ngModel"
+                 placeholder="Ej: Consulta médica general" />
+          <span class="field-error" *ngIf="nombreSer.invalid && nombreSer.touched">El nombre es obligatorio.</span>
+        </div>
+
+        <div class="field">
+          <label>Precio (₡) *</label>
+          <input [(ngModel)]="form.precio" type="number" name="precio" required min="1" #precioSer="ngModel" placeholder="0" />
+          <span class="field-error" *ngIf="precioSer.invalid && precioSer.touched">El precio debe ser mayor a cero.</span>
+        </div>
+
+        <div class="field">
+          <label>Duración (minutos) *</label>
+          <input [(ngModel)]="form.duracionMinutos" type="number" name="duracionMinutos" required min="1" #durSer="ngModel" placeholder="0" />
+          <span class="field-error" *ngIf="durSer.invalid && durSer.touched">La duración debe ser mayor a cero.</span>
+        </div>
+
+        <div class="field">
+          <label>Modalidad *</label>
+          <select [(ngModel)]="form.modalidad" name="modalidad" required>
+            <option value="VIRTUAL">Virtual</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="MIXTA">Mixta</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Estado</label>
+          <select [(ngModel)]="form.estado" name="estado">
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Descripción *</label>
+          <textarea [(ngModel)]="form.descripcion" name="descripcion" required #descSer="ngModel"
+                    rows="3" placeholder="Descripción del servicio..."></textarea>
+          <span class="field-error" *ngIf="descSer.invalid && descSer.touched">La descripción es obligatoria.</span>
+        </div>
+
+        <div class="field full">
+          <label>Especialidades asociadas</label>
+          <div class="inline-add">
+            <select [(ngModel)]="especialidadSeleccionada" name="especialidadSeleccionada">
+              <option [ngValue]="null">— Seleccionar especialidad —</option>
+              <option *ngFor="let item of especialidades" [ngValue]="item.id">{{ item.nombre }}</option>
+            </select>
+            <button type="button" class="btn-outline" (click)="agregarEspecialidad()">Agregar</button>
+          </div>
+          <div *ngIf="especialidadesSeleccionadas.length > 0" class="tags-list" style="margin-top:.5rem">
+            <span class="tag" *ngFor="let e of especialidadesSeleccionadas">
+              {{ e.nombre }}
+              <button type="button" class="tag-remove" (click)="quitarEspecialidad(e.id)">✕</button>
+            </span>
+          </div>
+          <p class="muted" *ngIf="especialidadesSeleccionadas.length === 0">Sin especialidades seleccionadas.</p>
         </div>
 
         <div class="full actions">
-          <button class="primary" type="submit">{{ editandoId ? 'Guardar cambios' : 'Crear servicio' }}</button>
-          <button type="button" (click)="limpiarFormulario()">Limpiar</button>
+          <button class="primary" type="submit" [disabled]="guardando">
+            {{ guardando ? 'Guardando...' : (editandoId ? 'Guardar cambios' : 'Crear servicio') }}
+          </button>
+          <button type="button" class="btn-outline" (click)="limpiarFormulario(formSer)">Cancelar</button>
         </div>
       </form>
+
+      <div *ngIf="formError" class="status-box error" style="margin-top:.75rem">{{ formError }}</div>
+      <div *ngIf="formExito" class="status-box success" style="margin-top:.75rem">{{ formExito }}</div>
     </section>
+  
   `,
   styles: [
     `
@@ -196,6 +250,30 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         color: var(--color-subtle);
         font-size: 0.82rem;
       }
+
+      .tags-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .tag {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.78rem;
+        font-weight: 700; color: #28594d; background: #e4f3ed;
+      }
+      .tag-remove {
+        background: none; border: none; cursor: pointer; font-size: 0.7rem;
+        color: #28594d; padding: 0; line-height: 1;
+      }
+      .tag-remove:hover { color: #c0392b; }
+      .btn-outline { background: transparent; border: 1px solid var(--color-outline); color: var(--color-text); }
+      .btn-outline:hover { background: var(--color-soft); }
+      .field { display:flex; flex-direction:column; gap:.3rem; }
+      .field label { font-size:.82rem; font-weight:600; color:var(--color-text); }
+      .field-error { font-size:.78rem; color:#c0392b; margin-top:.1rem; }
+      .inline-add { display:flex; gap:.5rem; align-items:center; }
+      .inline-add select { flex:1; }
+      .status-box {
+        border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.88rem;
+      }
+      .status-box.error { background: #fdf2f2; color: #c0392b; border: 1px solid #f5b7b1; }
+      .status-box.success { background: #f0faf5; color: #1e8449; border: 1px solid #a9dfbf; }
     `,
   ],
 })
@@ -209,6 +287,9 @@ export class ServiciosPageComponent implements OnInit {
   especialidades: Especialidad[] = [];
   loading = false;
   error = '';
+  formError = '';
+  formExito = '';
+  guardando = false;
 
   search = '';
   servicioSeleccionadoId: number | null = null;
@@ -220,6 +301,7 @@ export class ServiciosPageComponent implements OnInit {
 
   editandoId: number | null = null;
   especialidadSeleccionada: number | null = null;
+  especialidadesSeleccionadas: { id: number; nombre: string }[] = [];
 
   form: ServicioPayload = {
     perfilProfesionalId: 0,
@@ -295,15 +377,30 @@ export class ServiciosPageComponent implements OnInit {
   agregarEspecialidad(): void {
     if (!this.especialidadSeleccionada) return;
     if (!this.form.especialidadIds) this.form.especialidadIds = [];
-    if (!this.form.especialidadIds.includes(this.especialidadSeleccionada)) {
-      this.form.especialidadIds.push(this.especialidadSeleccionada);
+    const yaExiste = this.especialidadesSeleccionadas.some((e) => e.id === this.especialidadSeleccionada);
+    if (yaExiste) return;
+    const esp = this.especialidades.find((e) => e.id === this.especialidadSeleccionada);
+    if (esp) {
+      this.especialidadesSeleccionadas.push({ id: esp.id, nombre: esp.nombre });
+      this.form.especialidadIds = this.especialidadesSeleccionadas.map((e) => e.id);
     }
+    this.especialidadSeleccionada = null;
+  }
+
+  quitarEspecialidad(id: number): void {
+    this.especialidadesSeleccionadas = this.especialidadesSeleccionadas.filter((e) => e.id !== id);
+    this.form.especialidadIds = this.especialidadesSeleccionadas.map((e) => e.id);
   }
 
   editar(servicio: Servicio): void {
     this.editandoId = servicio.id;
     this.api.getServicioById(servicio.id).subscribe((detalle) => {
-      const especialidadIds = (detalle as unknown as { especialidades?: Array<{ especialidadId: number }> }).especialidades?.map((x) => x.especialidadId) || [];
+      const especialidadIds =
+        (detalle as unknown as { especialidades?: Array<{ especialidadId: number; especialidad: { nombre: string } }> })
+          .especialidades?.map((x) => x.especialidadId) || [];
+      this.especialidadesSeleccionadas =
+        (detalle as unknown as { especialidades?: Array<{ especialidadId: number; especialidad: { nombre: string } }> })
+          .especialidades?.map((x) => ({ id: x.especialidadId, nombre: x.especialidad.nombre })) || [];
       this.form = {
         perfilProfesionalId: detalle.perfilProfesionalId,
         categoriaId: detalle.categoriaId,
@@ -318,14 +415,22 @@ export class ServiciosPageComponent implements OnInit {
     });
   }
 
-  guardar(): void {
+  guardar(formRef?: NgForm): void {
+    if (formRef) formRef.form.markAllAsTouched();
+    this.formError = '';
+    this.formExito = '';
+    if (formRef?.invalid) {
+      this.formError = 'Completá todos los campos requeridos antes de guardar.';
+      return;
+    }
+
     if (!this.form.perfilProfesionalId || !this.form.categoriaId) {
-      this.error = 'Profesional y categoria son obligatorios.';
+      this.formError = 'Profesional y categoría son obligatorios.';
       return;
     }
 
     if (this.form.precio <= 0 || this.form.duracionMinutos <= 0) {
-      this.error = 'Precio y duracion deben ser mayores a cero.';
+      this.formError = 'Precio y duración deben ser mayores a cero.';
       return;
     }
 
@@ -338,35 +443,46 @@ export class ServiciosPageComponent implements OnInit {
       especialidadIds: (this.form.especialidadIds || []).map((id) => Number(id)).filter((id) => id > 0),
     };
 
+    this.guardando = true;
     const request = this.editandoId
       ? this.api.updateServicio(this.editandoId, payload)
       : this.api.createServicio(payload);
 
     request.subscribe({
       next: () => {
+        this.formExito = this.editandoId
+          ? 'Servicio actualizado correctamente.'
+          : 'Servicio creado correctamente.';
         this.limpiarFormulario();
         this.cargarServicios();
+        this.guardando = false;
       },
       error: () => {
-        this.error = 'No fue posible guardar el servicio.';
+        this.formError = 'No fue posible guardar el servicio. Verifique los datos.';
+        this.guardando = false;
       },
     });
   }
 
   toggleEstado(servicio: Servicio): void {
     const siguiente = servicio.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-    if (!confirm(`Confirma cambiar el estado a ${siguiente}?`)) return;
+    if (!confirm('Confirma cambiar el estado de "' + servicio.nombre + '" a ' + siguiente + '?')) return;
 
     this.api.setEstadoServicio(servicio.id, siguiente).subscribe({
-      next: () => this.cargarServicios(),
+      next: () => {
+        this.formExito = 'Estado del servicio actualizado a ' + siguiente + '.';
+        this.cargarServicios();
+      },
       error: () => {
         this.error = 'No se pudo cambiar el estado del servicio.';
       },
     });
   }
 
-  limpiarFormulario(): void {
+  limpiarFormulario(formRef?: NgForm): void {
     this.editandoId = null;
+    this.especialidadesSeleccionadas = [];
+    this.especialidadSeleccionada = null;
     this.form = {
       perfilProfesionalId: 0,
       categoriaId: 0,
@@ -378,5 +494,7 @@ export class ServiciosPageComponent implements OnInit {
       estado: 'ACTIVO',
       especialidadIds: [],
     };
+    this.formError = '';
+    setTimeout(() => formRef?.resetForm());
   }
 }

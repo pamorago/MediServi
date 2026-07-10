@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Servicio } from '../core/models';
@@ -7,117 +7,159 @@ import { Servicio } from '../core/models';
 @Component({
   selector: 'app-servicio-detalle-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, RouterLink],
   template: `
-    <section class="card" *ngIf="servicio">
-      <h2>Detalle del servicio</h2>
-      <p><strong>Nombre:</strong> {{ servicio.nombre }}</p>
-      <p><strong>Categoria:</strong> {{ servicio.categoria?.nombre }}</p>
-      <p><strong>Profesional:</strong> {{ servicio.perfil?.usuario?.nombre }} {{ servicio.perfil?.usuario?.apellidos }}</p>
-      <p><strong>Modalidad:</strong> {{ servicio.modalidad }}</p>
-      <p><strong>Precio:</strong> {{ servicio.precio }}</p>
-      <p><strong>Duracion:</strong> {{ servicio.duracionMinutos }} min</p>
-      <p><strong>Estado:</strong> {{ servicio.estado }}</p>
-      <p><strong>Descripcion:</strong> {{ servicio.descripcion }}</p>
+    <div *ngIf="loading" class="status-box loading">Cargando detalle del servicio...</div>
+    <div *ngIf="error" class="status-box error">{{ error }}</div>
 
-      <div class="section" *ngIf="servicio.especialidades?.length">
-        <h3>Especialidades asociadas</h3>
-        <div class="tags">
-          <span *ngFor="let item of servicio.especialidades" class="tag">{{ item.especialidad.nombre }}</span>
-        </div>
-      </div>
+    <ng-container *ngIf="servicio && !loading">
 
-      <div class="section">
-        <h3>Comentarios y evaluaciones</h3>
-        <p *ngIf="totalResenas > 0">
-          <strong>Calificacion promedio:</strong>
-          {{ promedioResenas | number: '1.1-1' }} / 5 ({{ totalResenas }} evaluaciones)
-        </p>
-        <p *ngIf="totalResenas === 0" class="muted">Este servicio aun no tiene evaluaciones registradas.</p>
-
-        <article class="resena" *ngFor="let item of evaluacionesServicio">
-          <div class="resena-head">
-            <strong>{{ item.cliente }}</strong>
-            <span>{{ item.fecha | date: 'MM/dd/yyyy' }}</span>
+      <section class="card detail-header">
+        <div class="svc-hero">
+          <div class="svc-hero-info">
+            <div class="module-head">
+              <span class="module-id">SVC-{{ servicio.id }}</span>
+              <h2>{{ servicio.nombre }}</h2>
+            </div>
+            <div class="badges">
+              <span class="pill modalidad">{{ servicio.modalidad }}</span>
+              <span class="pill" [class.off]="servicio.estado === 'INACTIVO'">
+                {{ servicio.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
           </div>
-          <p class="stars">{{ estrellas(item.puntuacion) }} ({{ item.puntuacion }}/5)</p>
-          <p>{{ item.comentario }}</p>
-        </article>
+        </div>
+      </section>
+
+      <div class="detail-grid">
+
+        <section class="card">
+          <h3 class="section-title">Información del servicio</h3>
+          <dl class="info-list">
+            <dt>Precio</dt>
+            <dd>₡{{ servicio.precio | number }}</dd>
+            <dt>Duración</dt>
+            <dd>{{ servicio.duracionMinutos }} minutos</dd>
+            <dt>Modalidad</dt>
+            <dd>{{ servicio.modalidad }}</dd>
+            <dt>Estado</dt>
+            <dd>{{ servicio.estado }}</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h3 class="section-title">Profesional</h3>
+          <dl class="info-list" *ngIf="servicio.perfil">
+            <dt>Nombre</dt>
+            <dd>{{ servicio.perfil.usuario.nombre }} {{ servicio.perfil.usuario.apellidos }}</dd>
+            <dt>Título</dt>
+            <dd>{{ servicio.perfil.tituloProfesional }}</dd>
+            <dt>Modalidad</dt>
+            <dd>{{ servicio.perfil.modalidad }}</dd>
+            <dt>Disponibilidad</dt>
+            <dd>{{ servicio.perfil.disponible ? 'Disponible' : 'No disponible' }}</dd>
+          </dl>
+          <p class="muted" *ngIf="!servicio.perfil">Profesional no encontrado.</p>
+        </section>
+
+        <section class="card">
+          <h3 class="section-title">Categoría</h3>
+          <dl class="info-list" *ngIf="servicio.categoria">
+            <dt>Nombre</dt>
+            <dd>{{ servicio.categoria.nombre }}</dd>
+            <dt>Estado</dt>
+            <dd>{{ servicio.categoria.estado }}</dd>
+          </dl>
+          <p class="muted" *ngIf="!servicio.categoria">Categoría no encontrada.</p>
+        </section>
+
+        <section class="card">
+          <h3 class="section-title">Especialidades asociadas</h3>
+          <div *ngIf="servicio.especialidades && servicio.especialidades.length > 0" class="tags">
+            <span class="tag" *ngFor="let e of servicio.especialidades">
+              {{ e.especialidad.nombre }}
+            </span>
+          </div>
+          <p class="muted" *ngIf="!servicio.especialidades || servicio.especialidades.length === 0">
+            Este servicio no tiene especialidades registradas.
+          </p>
+        </section>
+
+        <section class="card full-col">
+          <h3 class="section-title">Descripción</h3>
+          <p class="descripcion">{{ servicio.descripcion }}</p>
+        </section>
+
       </div>
 
-      <a routerLink="/servicios">Volver</a>
-    </section>
-
-    <p *ngIf="loading" class="status">Cargando detalle...</p>
-    <p *ngIf="error" class="status error">{{ error }}</p>
+      <div style="margin-top:1rem">
+        <a class="btn-back" routerLink="/servicios">← Volver al listado</a>
+      </div>
+    </ng-container>
   `,
-  styles: [
-    `
-      .section {
-        margin-top: 1rem;
-        padding-top: 0.7rem;
-        border-top: 1px dashed #c2d8cf;
-      }
+  styles: [`
+    .status-box {
+      border-radius:10px; padding:.7rem 1rem; margin:.5rem 0; font-size:.88rem;
+    }
+    .status-box.loading { background:#f0f7ff; color:#1a5276; border:1px solid #aed6f1; }
+    .status-box.error { background:#fdf2f2; color:#c0392b; border:1px solid #f5b7b1; }
 
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-      }
+    .detail-header { margin-bottom:1rem; }
+    .svc-hero { display:flex; gap:1.2rem; align-items:flex-start; flex-wrap:wrap; }
+    .svc-hero-info { flex:1; min-width:220px; }
+    .badges { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
 
-      .tag {
-        border-radius: 999px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #28594d;
-        background: #e4f3ed;
-      }
+    .detail-grid {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1rem;
+    }
+    .full-col { grid-column: 1 / -1; }
 
-      .resena {
-        margin-top: 0.75rem;
-        border: 1px solid #d9e9e3;
-        border-radius: 10px;
-        padding: 0.65rem 0.75rem;
-        background: #fbfefd;
-      }
+    .section-title {
+      font-size:.92rem; font-weight:700; color:var(--color-text);
+      margin:0 0 .75rem; padding-bottom:.4rem;
+      border-bottom:1px dashed var(--color-outline);
+    }
 
-      .resena-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.8rem;
-      }
+    .info-list { display:grid; grid-template-columns:auto 1fr; gap:.3rem .9rem; margin:0; }
+    dt { font-weight:600; font-size:.82rem; color:var(--color-subtle); }
+    dd { margin:0; font-size:.9rem; }
 
-      .resena-head span {
-        color: var(--color-subtle);
-        font-size: 0.85rem;
-      }
+    .descripcion { font-size:.9rem; line-height:1.6; color:var(--color-text); margin:0; }
 
-      .stars {
-        margin: 0.35rem 0;
-        color: #7a5b13;
-        font-weight: 700;
-      }
+    .tags { display:flex; flex-wrap:wrap; gap:.45rem; }
+    .tag {
+      border-radius:999px; padding:.25rem .65rem; font-size:.78rem;
+      font-weight:700; color:#28594d; background:#e4f3ed;
+    }
 
-      .muted {
-        color: var(--color-subtle);
-      }
-    `,
-  ],
+    .pill {
+      display:inline-block; border-radius:999px; padding:.2rem .55rem;
+      font-size:.72rem; font-weight:700; color:#2d5b4f; background:#e3f3ee;
+    }
+    .pill.off { color:#7a1c1c; background:#fbe6e6; }
+    .pill.modalidad { color:#234f45; background:#edf7f3; }
+
+    .muted { color:var(--color-subtle); font-size:.85rem; margin:0; }
+    .btn-back {
+      display:inline-block; padding:.45rem .9rem; border-radius:8px;
+      background:var(--color-soft); border:1px solid var(--color-outline);
+      color:var(--color-text); text-decoration:none; font-size:.87rem;
+    }
+    .btn-back:hover { background:var(--color-outline); }
+
+    @media (max-width: 640px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .full-col { grid-column: 1; }
+    }
+  `],
 })
 export class ServicioDetallePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ApiService);
 
   servicio: Servicio | null = null;
-  evaluacionesServicio: Array<{
-    cliente: string;
-    puntuacion: number;
-    comentario: string;
-    fecha: string;
-  }> = [];
-  promedioResenas = 0;
-  totalResenas = 0;
   loading = true;
   error = '';
 
@@ -126,7 +168,6 @@ export class ServicioDetallePageComponent implements OnInit {
     this.api.getServicioById(id).subscribe({
       next: (data) => {
         this.servicio = data;
-        this.cargarEvaluaciones(data);
         this.loading = false;
       },
       error: () => {
@@ -134,28 +175,5 @@ export class ServicioDetallePageComponent implements OnInit {
         this.loading = false;
       },
     });
-  }
-
-  estrellas(puntuacion: number): string {
-    const llenas = '★'.repeat(Math.max(0, Math.min(5, puntuacion)));
-    const vacias = '☆'.repeat(Math.max(0, 5 - puntuacion));
-    return `${llenas}${vacias}`;
-  }
-
-  private cargarEvaluaciones(servicio: Servicio): void {
-    const evaluaciones = (servicio.citas || [])
-      .filter((cita) => !!cita.resena)
-      .map((cita) => ({
-        cliente: `${cita.cliente?.nombre || ''} ${cita.cliente?.apellidos || ''}`.trim() || 'Cliente sin nombre',
-        puntuacion: cita.resena?.puntuacion || 0,
-        comentario: cita.resena?.comentario || 'Sin comentario.',
-        fecha: cita.resena?.createdAt || cita.fechaCita,
-      }));
-
-    this.evaluacionesServicio = evaluaciones;
-    this.totalResenas = evaluaciones.length;
-
-    const suma = evaluaciones.reduce((acc, item) => acc + item.puntuacion, 0);
-    this.promedioResenas = this.totalResenas ? suma / this.totalResenas : 0;
   }
 }

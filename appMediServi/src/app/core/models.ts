@@ -71,6 +71,11 @@ export interface Profesional {
   disponible: boolean;
   imagenPerfil: string;
   usuario: Usuario;
+  especialidades?: Array<{
+    especialidadId: number;
+    especialidad: Especialidad;
+  }>;
+  servicios?: Servicio[];
 }
 
 export interface Servicio {

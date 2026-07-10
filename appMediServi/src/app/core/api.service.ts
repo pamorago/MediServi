@@ -90,6 +90,19 @@ export class ApiService {
     return this.http.patch<Servicio>(`${this.baseUrl}/servicios/${id}/estado`, { estado });
   }
 
+  uploadImagenPerfil(file: File, previousFileName?: string): Observable<{ fileName: string }> {
+    const formData = new FormData();
+    formData.append('imagen', file);
+    if (previousFileName) {
+      formData.append('previousFileName', previousFileName);
+    }
+    return this.http.post<{ fileName: string }>(`${this.baseUrl}/imagenes/upload`, formData);
+  }
+
+  getImageUrl(fileName: string): string {
+    return `http://localhost:3000/images/${fileName}`;
+  }
+
   getCitas(): Observable<Cita[]> {
     return this.http.get<Cita[]>(`${this.baseUrl}/citas`);
   }

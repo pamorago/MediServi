@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/models';
@@ -15,33 +15,88 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         <span class="module-id">FORM-CIT</span>
         <h3>Registrar cita</h3>
       </div>
-      <form (ngSubmit)="crearCita()" class="form-grid">
-        <select [(ngModel)]="form.clienteId" name="clienteId" required>
-          <option [ngValue]="0">Seleccione cliente</option>
-          <option *ngFor="let cliente of clientes" [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
-        </select>
-        <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required (ngModelChange)="onProfesionalChange($event)">
-          <option [ngValue]="0">Seleccione profesional</option>
-          <option *ngFor="let profesional of profesionales" [ngValue]="profesional.id">
-            {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
-          </option>
-        </select>
-        <select [(ngModel)]="form.servicioId" name="servicioId" required>
-          <option [ngValue]="0">Seleccione servicio</option>
-          <option *ngFor="let servicio of serviciosFiltrados" [ngValue]="servicio.id">{{ servicio.nombre }}</option>
-        </select>
-        <input [(ngModel)]="form.fechaCita" type="date" name="fechaCita" required />
-        <input [(ngModel)]="form.horaInicio" type="time" name="horaInicio" required />
-        <input [(ngModel)]="form.horaFin" type="time" name="horaFin" required />
-        <select [(ngModel)]="form.modalidad" name="modalidad" required>
-          <option value="VIRTUAL">Virtual</option>
-          <option value="PRESENCIAL">Presencial</option>
-          <option value="MIXTA">Mixta</option>
-        </select>
-        <input [(ngModel)]="form.montoEstimado" type="number" name="montoEstimado" min="1" required placeholder="Monto estimado" />
-        <textarea class="full" [(ngModel)]="form.comentarioCliente" name="comentarioCliente" rows="3" placeholder="Comentario o descripcion"></textarea>
+      <form (ngSubmit)="crearCita(formCit)" #formCit="ngForm" class="form-grid" novalidate>
+
+        <div class="field">
+          <label>Cliente *</label>
+          <select [(ngModel)]="form.clienteId" name="clienteId" required #clienteCit="ngModel">
+            <option [ngValue]="0">— Seleccione cliente —</option>
+            <option *ngFor="let cliente of clientes" [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+          </select>
+          <span class="field-error" *ngIf="clienteCit.invalid && clienteCit.touched">El cliente es obligatorio.</span>
+        </div>
+
+        <div class="field">
+          <label>Profesional *</label>
+          <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profCit="ngModel" (ngModelChange)="onProfesionalChange($event)">
+            <option [ngValue]="0">— Seleccione profesional —</option>
+            <option *ngFor="let profesional of profesionales" [ngValue]="profesional.id">
+              {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
+            </option>
+          </select>
+          <span class="field-error" *ngIf="profCit.invalid && profCit.touched">El profesional es obligatorio.</span>
+        </div>
+
+        <div class="field">
+          <label>Servicio *</label>
+          <select [(ngModel)]="form.servicioId" name="servicioId" required #svcCit="ngModel">
+            <option [ngValue]="0">— Seleccione servicio —</option>
+            <option *ngFor="let servicio of serviciosFiltrados" [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+          </select>
+          <span class="field-error" *ngIf="svcCit.invalid && svcCit.touched">El servicio es obligatorio.</span>
+          <span class="field-hint" *ngIf="!form.perfilProfesionalId">Primero seleccioná un profesional.</span>
+        </div>
+
+        <div class="field">
+          <label>Fecha *</label>
+          <input [(ngModel)]="form.fechaCita" type="date" name="fechaCita" required #fechaCit="ngModel" />
+          <span class="field-error" *ngIf="fechaCit.invalid && fechaCit.touched">La fecha es obligatoria.</span>
+        </div>
+
+        <div class="field">
+          <label>Hora de inicio *</label>
+          <select [(ngModel)]="form.horaInicio" name="horaInicio" required #hInicioCit="ngModel">
+            <option value="">— Seleccione hora —</option>
+            <option *ngFor="let h of horasDisponibles" [value]="h">{{ h }}</option>
+          </select>
+          <span class="field-error" *ngIf="hInicioCit.invalid && hInicioCit.touched">La hora de inicio es obligatoria.</span>
+        </div>
+
+        <div class="field">
+          <label>Hora de fin (automática)</label>
+          <input type="text" [value]="horaFinCalculada || '—'" readonly style="background:#f5f5f5; color:#555; cursor:default;">
+          <span class="field-hint" *ngIf="horaFinCalculada">20 minutos después de la hora de inicio.</span>
+        </div>
+
+        <div class="field">
+          <label>Modalidad *</label>
+          <select [(ngModel)]="form.modalidad" name="modalidad" required>
+            <option value="VIRTUAL">Virtual</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="MIXTA">Mixta</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Monto estimado (₡) *</label>
+          <input [(ngModel)]="form.montoEstimado" type="number" name="montoEstimado" min="1" required #montoCit="ngModel" placeholder="0" />
+          <span class="field-error" *ngIf="montoCit.invalid && montoCit.touched">El monto debe ser mayor a cero.</span>
+        </div>
+
+        <div class="field full">
+          <label>Descripción / Comentario *</label>
+          <textarea [(ngModel)]="form.comentarioCliente" name="comentarioCliente" required #comentCit="ngModel"
+                    rows="3" placeholder="Descripción de la cita..."></textarea>
+          <span class="field-error" *ngIf="comentCit.invalid && comentCit.touched">La descripción es obligatoria.</span>
+        </div>
+
+        <div *ngIf="errorCita" class="status-box error full">{{ errorCita }}</div>
+        <div *ngIf="exitoCita" class="status-box success full">{{ exitoCita }}</div>
+
         <div class="full actions">
-          <button type="submit" class="primary">Registrar cita</button>
+          <button type="submit" class="primary" [disabled]="guardandoCita">
+            {{ guardandoCita ? 'Registrando...' : 'Registrar cita' }}
+          </button>
         </div>
       </form>
     </section>
@@ -101,6 +156,10 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
           <span>{{ cita.fechaCita | date: 'mediumDate' }}</span>
         </div>
         <div class="line">
+          <strong>Hora</strong>
+          <span>{{ cita.horaInicio | date: 'HH:mm' }} - {{ cita.horaFin | date: 'HH:mm' }}</span>
+        </div>
+        <div class="line">
           <strong>Modalidad</strong>
           <span>{{ cita.modalidad }}</span>
         </div>
@@ -123,6 +182,14 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         border-left: 5px solid #68a592;
         background: linear-gradient(165deg, #f9fdfb, #f0f8f4);
       }
+
+      .field { display:flex; flex-direction:column; gap:.3rem; }
+      .field label { font-size:.82rem; font-weight:600; color:var(--color-text); }
+      .field-error { font-size:.78rem; color:#c0392b; margin-top:.1rem; }
+      .field-hint { font-size:.78rem; color:var(--color-subtle); margin-top:.1rem; }
+      .status-box { border-radius:10px; padding:.6rem .9rem; font-size:.88rem; }
+      .status-box.error { background:#fdf2f2; color:#c0392b; border:1px solid #f5b7b1; }
+      .status-box.success { background:#f0faf5; color:#1e8449; border:1px solid #a9dfbf; }
 
       .module-banner {
         border-left: 5px solid #3d8874;
@@ -195,8 +262,12 @@ export class CitasPageComponent implements OnInit {
   profesionales: Profesional[] = [];
   servicios: Servicio[] = [];
   serviciosFiltrados: Servicio[] = [];
+  horasDisponibles: string[] = [];
   loading = true;
   error = '';
+  errorCita = '';
+  exitoCita = '';
+  guardandoCita = false;
 
   estadoFiltro = '';
   profesionalFiltro = '';
@@ -215,7 +286,17 @@ export class CitasPageComponent implements OnInit {
     comentarioCliente: '',
   };
 
+  get horaFinCalculada(): string {
+    if (!this.form.horaInicio) return '';
+    const [h, m] = this.form.horaInicio.split(':').map(Number);
+    const totalMin = h * 60 + m + 20;
+    const hFin = Math.floor(totalMin / 60);
+    const mFin = totalMin % 60;
+    return `${hFin.toString().padStart(2, '0')}:${mFin.toString().padStart(2, '0')}`;
+  }
+
   ngOnInit(): void {
+    this.generarHoras();
     this.api.getUsuarios({ rol: 'CLIENTE', estado: 'ACTIVO' }).subscribe((data) => {
       this.clientes = data;
     });
@@ -229,6 +310,15 @@ export class CitasPageComponent implements OnInit {
     });
 
     this.cargarCitas();
+  }
+
+  generarHoras(): void {
+    const slots: string[] = [];
+    for (let h = 8; h <= 20; h++) {
+      slots.push(`${h.toString().padStart(2, '0')}:00`);
+      if (h < 20) slots.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+    this.horasDisponibles = slots;
   }
 
   onProfesionalChange(value: number | string): void {
@@ -259,12 +349,17 @@ export class CitasPageComponent implements OnInit {
     });
   }
 
-  crearCita(): void {
-    if (!this.form.clienteId || !this.form.perfilProfesionalId || !this.form.servicioId || !this.form.fechaCita || !this.form.horaInicio || !this.form.horaFin || !this.form.modalidad) {
-      this.error = 'Complete todos los campos obligatorios del formulario de cita.';
+  crearCita(formRef?: NgForm): void {
+    if (formRef) formRef.form.markAllAsTouched();
+    this.errorCita = '';
+    this.exitoCita = '';
+    if (formRef?.invalid) {
+      this.errorCita = 'Completá todos los campos requeridos.';
       return;
     }
+    this.form.horaFin = this.horaFinCalculada;
 
+    this.guardandoCita = true;
     const payload: CitaPayload = {
       ...this.form,
       clienteId: Number(this.form.clienteId),
@@ -275,6 +370,8 @@ export class CitasPageComponent implements OnInit {
 
     this.api.createCita(payload).subscribe({
       next: () => {
+        this.exitoCita = 'Cita registrada correctamente.';
+        this.guardandoCita = false;
         this.form = {
           clienteId: 0,
           perfilProfesionalId: 0,
@@ -287,10 +384,12 @@ export class CitasPageComponent implements OnInit {
           comentarioCliente: '',
         };
         this.serviciosFiltrados = [];
+        setTimeout(() => formRef?.resetForm());
         this.cargarCitas();
       },
       error: () => {
-        this.error = 'No se pudo registrar la cita.';
+        this.errorCita = 'No se pudo registrar la cita.';
+        this.guardandoCita = false;
       },
     });
   }

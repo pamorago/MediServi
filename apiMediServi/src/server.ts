@@ -2,6 +2,7 @@ import express from "express";
 import * as dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
+import path from "path";
 import routes from "./routes";
 import errorHandler from "./middlewares/errorHandler";
 
@@ -26,6 +27,9 @@ app.get("/", (req, res) => {
     message: "API de MediServi funcionando correctamente",
   });
 });
+
+// Servir imágenes de perfil como archivos estáticos
+app.use("/images", express.static(path.join(path.resolve(), "assets", "uploads")));
 
 // Rutas de la API
 app.use("/api", routes);
