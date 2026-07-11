@@ -63,12 +63,6 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
 
         <div class="field">
-          <label>Hora de fin (automática)</label>
-          <input type="text" [value]="horaFinCalculada || '—'" readonly style="background:#f5f5f5; color:#555; cursor:default;">
-          <span class="field-hint" *ngIf="horaFinCalculada">20 minutos después de la hora de inicio.</span>
-        </div>
-
-        <div class="field">
           <label>Modalidad *</label>
           <select [(ngModel)]="form.modalidad" name="modalidad" required>
             <option value="VIRTUAL">Virtual</option>
@@ -288,8 +282,11 @@ export class CitasPageComponent implements OnInit {
 
   get horaFinCalculada(): string {
     if (!this.form.horaInicio) return '';
+    const servicio = this.serviciosFiltrados.find((s) => s.id === Number(this.form.servicioId))
+      ?? this.servicios.find((s) => s.id === Number(this.form.servicioId));
+    const duracion = servicio?.duracionMinutos ?? 20;
     const [h, m] = this.form.horaInicio.split(':').map(Number);
-    const totalMin = h * 60 + m + 20;
+    const totalMin = h * 60 + m + duracion;
     const hFin = Math.floor(totalMin / 60);
     const mFin = totalMin % 60;
     return `${hFin.toString().padStart(2, '0')}:${mFin.toString().padStart(2, '0')}`;
