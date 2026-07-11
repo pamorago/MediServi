@@ -9,67 +9,75 @@ import { ApiService } from '../core/api.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="hero card">
-      <div class="hero-copy">
-        <div class="module-head">
-          <span class="module-id">INICIO</span>
+    <div class="dash-layout">
+      <section class="hero card">
+        <div class="hero-copy">
+          <div class="module-head">
+            <span class="module-id">INICIO</span>
+          </div>
+          <p class="eyebrow">Red de atencion medica integral</p>
+          <h2>Clinica MediServi: consulta preventiva, seguimiento y bienestar familiar</h2>
+          <p>
+            Ofrecemos consulta presencial y virtual con un modelo de atencion coordinada que combina
+            valoracion clinica, educacion al paciente y continuidad terapeutica.
+          </p>
+          <div class="hero-links">
+            <a routerLink="/categorias">Explorar servicios</a>
+            <a routerLink="/citas" class="ghost">Ver agenda clinica</a>
+          </div>
         </div>
-        <p class="eyebrow">Red de atencion medica integral</p>
-        <h2>Clinica MediServi: consulta preventiva, seguimiento y bienestar familiar</h2>
-        <p>
-          Ofrecemos consulta presencial y virtual con un modelo de atencion coordinada que combina
-          valoracion clinica, educacion al paciente y continuidad terapeutica.
-        </p>
-        <div class="hero-links">
-          <a routerLink="/categorias">Explorar servicios</a>
-          <a routerLink="/citas" class="ghost">Ver agenda clinica</a>
+        <aside class="hero-side">
+          <h3>Panel principal</h3>
+          <ul>
+            <li><span>{{ totalCategorias }}</span> Programas de atención</li>
+            <li><span>{{ totalEspecialidades }}</span> Especialidades activas</li>
+            <li><span>{{ totalCitas }}</span> Citas registradas</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="grid info-grid">
+        <article class="card" *ngFor="let item of datosInstitucionales">
+          <h3>{{ item.etiqueta }}</h3>
+          <p>{{ item.valor }}</p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h3>Compromiso asistencial</h3>
+        <div class="grid commitment-grid">
+          <article class="tile" *ngFor="let compromiso of compromisosClinicos">
+            <h4>{{ compromiso.titulo }}</h4>
+            <p>{{ compromiso.detalle }}</p>
+          </article>
         </div>
-      </div>
-      <aside class="hero-side">
-        <h3>Panel principal</h3>
-        <ul>
-          <li><span>{{ totalCategorias }}</span> programas de atencion</li>
-          <li><span>{{ totalEspecialidades }}</span> especialidades activas</li>
-          <li><span>{{ totalCitas }}</span> citas registradas</li>
-        </ul>
-      </aside>
-    </section>
+      </section>
 
-    <section class="grid info-grid">
-      <article class="card" *ngFor="let item of datosInstitucionales">
-        <h3>{{ item.etiqueta }}</h3>
-        <p>{{ item.valor }}</p>
-      </article>
-    </section>
+      <section class="card">
+        <div class="section-head">
+          <h3>Servicios mas consultados</h3>
+          <a routerLink="/especialidades">Ver especialidades</a>
+        </div>
+        <div class="grid service-grid">
+          <article class="service-item" *ngFor="let categoria of categoriasDestacadas">
+            <h4>{{ categoria.nombre }}</h4>
+            <p>{{ categoria.descripcion || 'Atencion clinica profesional con valoracion y plan de accion.' }}</p>
+          </article>
+        </div>
+      </section>
 
-    <section class="card">
-      <h3>Compromiso asistencial</h3>
-      <div class="grid commitment-grid">
-        <article class="tile" *ngFor="let compromiso of compromisosClinicos">
-          <h4>{{ compromiso.titulo }}</h4>
-          <p>{{ compromiso.detalle }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-head">
-        <h3>Servicios mas consultados</h3>
-        <a routerLink="/especialidades">Ver especialidades</a>
-      </div>
-      <div class="grid service-grid">
-        <article class="service-item" *ngFor="let categoria of categoriasDestacadas">
-          <h4>{{ categoria.nombre }}</h4>
-          <p>{{ categoria.descripcion || 'Atencion clinica profesional con valoracion y plan de accion.' }}</p>
-        </article>
-      </div>
-    </section>
-
-    <p *ngIf="loading" class="status">Cargando panel clinico...</p>
-    <p *ngIf="error" class="status error">{{ error }}</p>
+      <p *ngIf="loading" class="status">Cargando panel clinico...</p>
+      <p *ngIf="error" class="status error">{{ error }}</p>
+    </div>
   `,
   styles: [
     `
+      .dash-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
       .hero {
         display: grid;
         grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
@@ -156,7 +164,7 @@ import { ApiService } from '../core/api.service';
       }
 
       .info-grid {
-        margin-top: 1rem;
+        gap: 1.25rem;
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
@@ -184,6 +192,7 @@ import { ApiService } from '../core/api.service';
 
       .commitment-grid {
         margin-top: 1rem;
+        gap: 1.25rem;
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
@@ -206,6 +215,7 @@ import { ApiService } from '../core/api.service';
 
       .service-grid {
         margin-top: 0.9rem;
+        gap: 1.25rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
