@@ -41,7 +41,7 @@ import { Categoria } from '../core/models';
 
     <section class="grid cards" *ngIf="!loading && !error">
       <article class="card" *ngFor="let categoria of categorias">
-        <span class="record-id">CAT-{{ categoria.id }}</span>
+        <span class="record-id">CAT-{{ categoria.id }} </span>
         <div class="pill" [class.off]="categoria.estado === 'INACTIVO'">{{ categoria.estado }}</div>
         <h3>{{ categoria.nombre }}</h3>
         <p class="base">{{ categoria.descripcion || 'Servicio clinico disponible para consulta, control y orientacion terapeutica.' }}</p>

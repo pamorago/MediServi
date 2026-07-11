@@ -13,9 +13,8 @@ const getAllCategorias = async (filters: GetCategoriasFilters = {}) => {
     where: {
       nombre: normalizedSearch
         ? {
-            contains: normalizedSearch,
-            mode: "insensitive",
-          }
+          contains: normalizedSearch,
+        }
         : undefined,
       estado: filters.estado,
     },

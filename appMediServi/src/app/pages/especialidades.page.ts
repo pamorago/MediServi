@@ -17,8 +17,8 @@ import { Especialidad } from '../core/models';
       <p>Equipo interdisciplinario para atencion preventiva, diagnostico y seguimiento integral.</p>
 
       <div class="toolbar">
-        <input [(ngModel)]="search" placeholder="Buscar especialidad" />
-        <select [(ngModel)]="estadoFiltro">
+        <input [(ngModel)]="search" placeholder="Buscar especialidad" (keyup.enter)="cargarEspecialidades()" />
+        <select [(ngModel)]="estadoFiltro" (change)="cargarEspecialidades()">
           <option value="">Todos los estados</option>
           <option value="ACTIVO">Activo</option>
           <option value="INACTIVO">Inactivo</option>
@@ -32,7 +32,7 @@ import { Especialidad } from '../core/models';
 
     <section class="grid cards" *ngIf="!loading && !error">
       <article class="card" *ngFor="let item of especialidades">
-        <span class="record-id">ESP-{{ item.id }}</span>
+        <span class="record-id">ESP-{{ item.id }} </span>
         <div class="pill" [class.off]="item.estado === 'INACTIVO'">{{ item.estado }}</div>
         <h3>{{ item.nombre }}</h3>
         <p>{{ item.descripcion || 'Sin descripcion registrada' }}</p>
