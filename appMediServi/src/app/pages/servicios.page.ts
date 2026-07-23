@@ -27,13 +27,17 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         <input [(ngModel)]="search" (keydown.enter)="aplicarFiltrosLocales()" placeholder="Buscar por nombre" />
         <select [(ngModel)]="servicioSeleccionadoId">
           <option [ngValue]="null">Todos los servicios</option>
-          <option *ngFor="let item of todosServicios" [ngValue]="item.id">
+          @for (item of todosServicios; track item.id) {
+          <option [ngValue]="item.id">
             {{ item.nombre }}
           </option>
+          }
         </select>
         <select [(ngModel)]="categoriaFiltro">
           <option value="">Todas las categorias</option>
-          <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
+          @for (c of categorias; track c.id) {
+          <option [value]="c.id">{{ c.nombre }}</option>
+          }
         </select>
         <select [(ngModel)]="modalidadFiltro">
           <option value="">Todas las modalidades</option>
@@ -52,7 +56,8 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         <button type="button" (click)="limpiarFiltros()">Limpiar</button>
       </div>
 
-      <div class="table-wrap" *ngIf="!loading && !error">
+      @if (!loading && !error) {
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -68,7 +73,8 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let servicio of servicios">
+            @for (servicio of servicios; track servicio.id) {
+            <tr>
               <td><span class="record-id">SER-{{ servicio.id }}</span></td>
               <td>{{ servicio.nombre }}</td>
               <td>{{ servicio.perfil?.usuario?.nombre }} {{ servicio.perfil?.usuario?.apellidos }}</td>
@@ -77,13 +83,12 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
               <td><span class="pill modalidad">{{ servicio.modalidad }}</span></td>
               <td><span class="pill" [class.off]="servicio.estado === 'INACTIVO'">{{ servicio.estado }}</span></td>
               <td>
-                <ng-container *ngIf="servicio.totalEvaluaciones; else sinEvaluaciones">
-                  <strong>{{ servicio.promedioEvaluacion?.toFixed(1) }}/5</strong>
-                  <div class="muted">{{ servicio.totalEvaluaciones }} comentarios</div>
-                </ng-container>
-                <ng-template #sinEvaluaciones>
-                  <span class="muted">Sin evaluaciones</span>
-                </ng-template>
+                @if (servicio.totalEvaluaciones) {
+                <strong>{{ servicio.promedioEvaluacion?.toFixed(1) }}/5</strong>
+                <div class="muted">{{ servicio.totalEvaluaciones }} comentarios</div>
+                } @else {
+                <span class="muted">Sin evaluaciones</span>
+                }
               </td>
               <td class="actions">
                 <button (click)="editar(servicio)">Editar</button>
@@ -91,12 +96,18 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
                 <a class="detail-link" [routerLink]="['/servicios', servicio.id]">Detalle</a>
               </td>
             </tr>
+            }
           </tbody>
         </table>
       </div>
+      }
 
-      <p *ngIf="loading" class="status">Cargando servicios...</p>
-      <p *ngIf="error" class="status error">{{ error }}</p>
+      @if (loading) {
+      <p class="status">Cargando servicios...</p>
+      }
+      @if (error) {
+      <p class="status error">{{ error }}</p>
+      }
     </section>
 
     <section class="card" style="margin-top: 1rem">
@@ -110,37 +121,51 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
           <label>Profesional *</label>
           <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profSer="ngModel">
             <option [ngValue]="0">— Seleccione profesional —</option>
-            <option *ngFor="let p of profesionales" [ngValue]="p.id">{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</option>
+            @for (p of profesionales; track p.id) {
+            <option [ngValue]="p.id">{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</option>
+            }
           </select>
-          <span class="field-error" *ngIf="profSer.invalid && profSer.touched">El profesional es obligatorio.</span>
+          @if (profSer.invalid && profSer.touched) {
+          <span class="field-error">El profesional es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Categoría *</label>
           <select [(ngModel)]="form.categoriaId" name="categoriaId" required #catSer="ngModel">
             <option [ngValue]="0">— Seleccione categoría —</option>
-            <option *ngFor="let c of categorias" [ngValue]="c.id">{{ c.nombre }}</option>
+            @for (c of categorias; track c.id) {
+            <option [ngValue]="c.id">{{ c.nombre }}</option>
+            }
           </select>
-          <span class="field-error" *ngIf="catSer.invalid && catSer.touched">La categoría es obligatoria.</span>
+          @if (catSer.invalid && catSer.touched) {
+          <span class="field-error">La categoría es obligatoria.</span>
+          }
         </div>
 
         <div class="field">
           <label>Nombre del servicio *</label>
           <input [(ngModel)]="form.nombre" name="nombre" required #nombreSer="ngModel"
                  placeholder="Ej: Consulta médica general" />
-          <span class="field-error" *ngIf="nombreSer.invalid && nombreSer.touched">El nombre es obligatorio.</span>
+          @if (nombreSer.invalid && nombreSer.touched) {
+          <span class="field-error">El nombre es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Precio (₡) *</label>
           <input [(ngModel)]="form.precio" type="number" name="precio" required min="1" #precioSer="ngModel" placeholder="0" />
-          <span class="field-error" *ngIf="precioSer.invalid && precioSer.touched">El precio debe ser mayor a cero.</span>
+          @if (precioSer.invalid && precioSer.touched) {
+          <span class="field-error">El precio debe ser mayor a cero.</span>
+          }
         </div>
 
         <div class="field">
           <label>Duración (minutos) *</label>
           <input [(ngModel)]="form.duracionMinutos" type="number" name="duracionMinutos" required min="1" #durSer="ngModel" placeholder="0" />
-          <span class="field-error" *ngIf="durSer.invalid && durSer.touched">La duración debe ser mayor a cero.</span>
+          @if (durSer.invalid && durSer.touched) {
+          <span class="field-error">La duración debe ser mayor a cero.</span>
+          }
         </div>
 
         <div class="field">
@@ -164,7 +189,9 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
           <label>Descripción *</label>
           <textarea [(ngModel)]="form.descripcion" name="descripcion" required #descSer="ngModel"
                     rows="3" placeholder="Descripción del servicio..."></textarea>
-          <span class="field-error" *ngIf="descSer.invalid && descSer.touched">La descripción es obligatoria.</span>
+          @if (descSer.invalid && descSer.touched) {
+          <span class="field-error">La descripción es obligatoria.</span>
+          }
         </div>
 
         <div class="field full">
@@ -172,17 +199,24 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
           <div class="inline-add">
             <select [(ngModel)]="especialidadSeleccionada" name="especialidadSeleccionada">
               <option [ngValue]="null">— Seleccionar especialidad —</option>
-              <option *ngFor="let item of especialidades" [ngValue]="item.id">{{ item.nombre }}</option>
+              @for (item of especialidades; track item.id) {
+              <option [ngValue]="item.id">{{ item.nombre }}</option>
+              }
             </select>
             <button type="button" class="btn-outline" (click)="agregarEspecialidad()">Agregar</button>
           </div>
-          <div *ngIf="especialidadesSeleccionadas.length > 0" class="tags-list" style="margin-top:.5rem">
-            <span class="tag" *ngFor="let e of especialidadesSeleccionadas">
+          @if (especialidadesSeleccionadas.length > 0) {
+          <div class="tags-list" style="margin-top:.5rem">
+            @for (e of especialidadesSeleccionadas; track e.id) {
+            <span class="tag">
               {{ e.nombre }}
               <button type="button" class="tag-remove" (click)="quitarEspecialidad(e.id)">✕</button>
             </span>
+            }
           </div>
-          <p class="muted" *ngIf="especialidadesSeleccionadas.length === 0">Sin especialidades seleccionadas.</p>
+          } @else {
+          <p class="muted">Sin especialidades seleccionadas.</p>
+          }
         </div>
 
         <div class="full actions">
@@ -191,10 +225,14 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
           </button>
           <button type="button" class="btn-outline" (click)="limpiarFormulario(formSer)">Cancelar</button>
         </div>
-      </form>
 
-      <div *ngIf="formError" class="status-box error" style="margin-top:.75rem">{{ formError }}</div>
-      <div *ngIf="formExito" class="status-box success" style="margin-top:.75rem">{{ formExito }}</div>
+        @if (formError) {
+        <div class="status-box error" style="margin-top:.75rem">{{ formError }}</div>
+        }
+        @if (formExito) {
+        <div class="status-box success" style="margin-top:.75rem">{{ formExito }}</div>
+        }
+      </form>
     </section>
   
   `,

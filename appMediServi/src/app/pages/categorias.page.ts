@@ -39,8 +39,10 @@ import { Categoria } from '../core/models';
     <p *ngIf="loading" class="status">Cargando categorias...</p>
     <p *ngIf="error" class="status error">{{ error }}</p>
 
-    <section class="grid cards" *ngIf="!loading && !error">
-      <article class="card" *ngFor="let categoria of categorias">
+    @if (!loading && !error) {
+    <section class="grid cards">
+      @for (categoria of categorias; track categoria.id) {
+      <article class="card">
         <span class="record-id">CAT-{{ categoria.id }} </span>
         <div class="pill" [class.off]="categoria.estado === 'INACTIVO'">{{ categoria.estado }}</div>
         <h3>{{ categoria.nombre }}</h3>
@@ -50,7 +52,9 @@ import { Categoria } from '../core/models';
           <button (click)="toggleEstado(categoria)">{{ categoria.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
         </div>
       </article>
+      }
     </section>
+    }
   `,
   styles: [
     `

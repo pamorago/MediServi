@@ -12,7 +12,7 @@ import { Servicio } from '../core/models';
     <div *ngIf="loading" class="status-box loading">Cargando detalle del servicio...</div>
     <div *ngIf="error" class="status-box error">{{ error }}</div>
 
-    <ng-container *ngIf="servicio && !loading">
+    @if (servicio && !loading) {
 
       <section class="card detail-header">
         <div class="svc-hero">
@@ -47,9 +47,10 @@ import { Servicio } from '../core/models';
           </dl>
         </section>
 
+        @if (servicio.perfil) {
         <section class="card">
           <h3 class="section-title">Profesional</h3>
-          <dl class="info-list" *ngIf="servicio.perfil">
+          <dl class="info-list">
             <dt>Nombre</dt>
             <dd>{{ servicio.perfil.usuario.nombre }} {{ servicio.perfil.usuario.apellidos }}</dd>
             <dt>Título</dt>
@@ -59,30 +60,46 @@ import { Servicio } from '../core/models';
             <dt>Disponibilidad</dt>
             <dd>{{ servicio.perfil.disponible ? 'Disponible' : 'No disponible' }}</dd>
           </dl>
-          <p class="muted" *ngIf="!servicio.perfil">Profesional no encontrado.</p>
         </section>
+        } @else {
+        <section class="card">
+          <h3 class="section-title">Profesional</h3>
+          <p class="muted">Profesional no encontrado.</p>
+        </section>
+        }
 
+        @if (servicio.categoria) {
         <section class="card">
           <h3 class="section-title">Categoría</h3>
-          <dl class="info-list" *ngIf="servicio.categoria">
+          <dl class="info-list">
             <dt>Nombre</dt>
             <dd>{{ servicio.categoria.nombre }}</dd>
             <dt>Estado</dt>
             <dd>{{ servicio.categoria.estado }}</dd>
           </dl>
-          <p class="muted" *ngIf="!servicio.categoria">Categoría no encontrada.</p>
         </section>
+        } @else {
+        <section class="card">
+          <h3 class="section-title">Categoría</h3>
+          <p class="muted">Categoría no encontrada.</p>
+        </section>
+        }
 
         <section class="card">
           <h3 class="section-title">Especialidades asociadas</h3>
-          <div *ngIf="servicio.especialidades && servicio.especialidades.length > 0" class="tags">
-            <span class="tag" *ngFor="let e of servicio.especialidades">
+          @if (servicio.especialidades && servicio.especialidades.length > 0) {
+          <div class="tags">
+            @for (e of servicio.especialidades; track e.especialidadId) {
+            <span class="tag">
               {{ e.especialidad.nombre }}
             </span>
+            }
           </div>
-          <p class="muted" *ngIf="!servicio.especialidades || servicio.especialidades.length === 0">
+          } @else {
+          <p class="muted">
             Este servicio no tiene especialidades registradas.
           </p>
+          }
         </section>
 
         <section class="card full-col">
@@ -95,7 +112,7 @@ import { Servicio } from '../core/models';
       <div style="margin-top:1rem">
         <a class="btn-back" routerLink="/servicios">← Volver al listado</a>
       </div>
-    </ng-container>
+    }
   `,
   styles: [`
     .status-box {

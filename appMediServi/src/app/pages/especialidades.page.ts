@@ -30,8 +30,10 @@ import { Especialidad } from '../core/models';
     <p *ngIf="loading" class="status">Cargando especialidades...</p>
     <p *ngIf="error" class="status error">{{ error }}</p>
 
-    <section class="grid cards" *ngIf="!loading && !error">
-      <article class="card" *ngFor="let item of especialidades">
+    @if (!loading && !error) {
+    <section class="grid cards">
+      @for (item of especialidades; track item.id) {
+      <article class="card">
         <span class="record-id">ESP-{{ item.id }} </span>
         <div class="pill" [class.off]="item.estado === 'INACTIVO'">{{ item.estado }}</div>
         <h3>{{ item.nombre }}</h3>
@@ -40,7 +42,9 @@ import { Especialidad } from '../core/models';
           <button (click)="toggleEstado(item)">{{ item.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
         </div>
       </article>
+      }
     </section>
+    }
   `,
   styles: [
     `

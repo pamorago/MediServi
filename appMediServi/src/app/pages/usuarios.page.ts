@@ -26,9 +26,11 @@ import { Usuario } from '../core/models';
         <input [(ngModel)]="search" (keydown.enter)="aplicarFiltrosLocales()" placeholder="Buscar por nombre o correo" />
         <select [(ngModel)]="usuarioSeleccionadoId">
           <option [ngValue]="null">Todos los usuarios</option>
-          <option *ngFor="let item of todosUsuarios" [ngValue]="item.id">
+          @for (item of todosUsuarios; track item.id) {
+          <option [ngValue]="item.id">
             {{ item.nombre }} {{ item.apellidos }}
           </option>
+          }
         </select>
         <select [(ngModel)]="rol">
           <option value="">Todos los roles</option>
@@ -48,7 +50,8 @@ import { Usuario } from '../core/models';
       <p *ngIf="loading" class="status">Cargando usuarios...</p>
       <p *ngIf="error" class="status error">{{ error }}</p>
 
-      <div class="table-wrap" *ngIf="!loading && !error">
+      @if (!loading && !error) {
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -61,7 +64,8 @@ import { Usuario } from '../core/models';
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let usuario of usuarios">
+            @for (usuario of usuarios; track usuario.id) {
+            <tr>
               <td><span class="record-id">USR-{{ usuario.id }}</span></td>
               <td>{{ usuario.nombre }} {{ usuario.apellidos }}</td>
               <td>{{ usuario.email }}</td>
@@ -73,9 +77,11 @@ import { Usuario } from '../core/models';
                 </button>
               </td>
             </tr>
+            }
           </tbody>
         </table>
       </div>
+      }
     </section>
   `,
   styles: [

@@ -12,7 +12,7 @@ import { Profesional } from '../core/models';
     <div *ngIf="loading" class="status-box loading">Cargando detalle del profesional...</div>
     <div *ngIf="error" class="status-box error">{{ error }}</div>
 
-    <ng-container *ngIf="profesional && !loading">
+    @if (profesional && !loading) {
       <section class="card detail-header">
         <div class="prof-hero">
           <img [src]="api.getImageUrl(profesional.imagenPerfil)"
@@ -68,20 +68,27 @@ import { Profesional } from '../core/models';
 
         <section class="card full-col">
           <h3 class="section-title">Especialidades</h3>
-          <div *ngIf="profesional.especialidades && profesional.especialidades.length > 0" class="tags">
-            <span class="tag" *ngFor="let e of profesional.especialidades">
+          @if (profesional.especialidades && profesional.especialidades.length > 0) {
+          <div class="tags">
+            @for (e of profesional.especialidades; track e.especialidadId) {
+            <span class="tag">
               {{ e.especialidad.nombre }}
             </span>
+            }
           </div>
-          <p class="muted" *ngIf="!profesional.especialidades || profesional.especialidades.length === 0">
+          } @else {
+          <p class="muted">
             Este profesional no tiene especialidades registradas.
           </p>
+          }
         </section>
 
-        <section class="card full-col" *ngIf="profesional.servicios && profesional.servicios.length > 0">
+        @if (profesional.servicios && profesional.servicios.length > 0) {
+        <section class="card full-col">
           <h3 class="section-title">Servicios ofrecidos</h3>
           <ul class="svc-list">
-            <li *ngFor="let s of profesional.servicios" class="svc-item">
+            @for (s of profesional.servicios; track s.id) {
+            <li class="svc-item">
               <div>
                 <strong>{{ s.nombre }}</strong>
                 <span class="pill" [class.off]="s.estado === 'INACTIVO'" style="margin-left:.5rem">{{ s.estado }}</span>
@@ -92,15 +99,17 @@ import { Profesional } from '../core/models';
                 <span class="pill modalidad">{{ s.modalidad }}</span>
               </div>
             </li>
+            }
           </ul>
         </section>
+        }
 
       </div>
 
       <div style="margin-top:1rem">
         <a class="btn-back" routerLink="/profesionales">← Volver al listado</a>
       </div>
-    </ng-container>
+    }
   `,
   styles: [`
     .status-box {

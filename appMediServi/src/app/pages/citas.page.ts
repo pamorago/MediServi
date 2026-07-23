@@ -21,45 +21,65 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
           <label>Cliente *</label>
           <select [(ngModel)]="form.clienteId" name="clienteId" required #clienteCit="ngModel">
             <option [ngValue]="0">— Seleccione cliente —</option>
-            <option *ngFor="let cliente of clientes" [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+            @for (cliente of clientes; track cliente.id) {
+            <option [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+            }
           </select>
-          <span class="field-error" *ngIf="clienteCit.invalid && clienteCit.touched">El cliente es obligatorio.</span>
+          @if (clienteCit.invalid && clienteCit.touched) {
+          <span class="field-error">El cliente es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Profesional *</label>
           <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profCit="ngModel" (ngModelChange)="onProfesionalChange($event)">
             <option [ngValue]="0">— Seleccione profesional —</option>
-            <option *ngFor="let profesional of profesionales" [ngValue]="profesional.id">
+            @for (profesional of profesionales; track profesional.id) {
+            <option [ngValue]="profesional.id">
               {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
             </option>
+            }
           </select>
-          <span class="field-error" *ngIf="profCit.invalid && profCit.touched">El profesional es obligatorio.</span>
+          @if (profCit.invalid && profCit.touched) {
+          <span class="field-error">El profesional es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Servicio *</label>
           <select [(ngModel)]="form.servicioId" name="servicioId" required #svcCit="ngModel">
             <option [ngValue]="0">— Seleccione servicio —</option>
-            <option *ngFor="let servicio of serviciosFiltrados" [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+            @for (servicio of serviciosFiltrados; track servicio.id) {
+            <option [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+            }
           </select>
-          <span class="field-error" *ngIf="svcCit.invalid && svcCit.touched">El servicio es obligatorio.</span>
-          <span class="field-hint" *ngIf="!form.perfilProfesionalId">Primero seleccioná un profesional.</span>
+          @if (svcCit.invalid && svcCit.touched) {
+          <span class="field-error">El servicio es obligatorio.</span>
+          }
+          @if (!form.perfilProfesionalId) {
+          <span class="field-hint">Primero seleccioná un profesional.</span>
+          }
         </div>
 
         <div class="field">
           <label>Fecha *</label>
           <input [(ngModel)]="form.fechaCita" type="date" name="fechaCita" required #fechaCit="ngModel" />
-          <span class="field-error" *ngIf="fechaCit.invalid && fechaCit.touched">La fecha es obligatoria.</span>
+          @if (fechaCit.invalid && fechaCit.touched) {
+          <span class="field-error">La fecha es obligatoria.</span>
+          }
         </div>
 
         <div class="field">
           <label>Hora de inicio *</label>
           <select [(ngModel)]="form.horaInicio" name="horaInicio" required #hInicioCit="ngModel">
             <option value="">— Seleccione hora —</option>
-            <option *ngFor="let h of horasDisponibles" [value]="h">{{ h }}</option>
+            @for (h of horasDisponibles; track h) {
+            <option [value]="h">{{ h }}</option>
+            }
           </select>
-          <span class="field-error" *ngIf="hInicioCit.invalid && hInicioCit.touched">La hora de inicio es obligatoria.</span>
+          @if (hInicioCit.invalid && hInicioCit.touched) {
+          <span class="field-error">La hora de inicio es obligatoria.</span>
+          }
         </div>
 
         <div class="field">
@@ -74,18 +94,26 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         <div class="field">
           <label>Monto estimado (₡) *</label>
           <input [(ngModel)]="form.montoEstimado" type="number" name="montoEstimado" min="1" required #montoCit="ngModel" placeholder="0" />
-          <span class="field-error" *ngIf="montoCit.invalid && montoCit.touched">El monto debe ser mayor a cero.</span>
+          @if (montoCit.invalid && montoCit.touched) {
+          <span class="field-error">El monto debe ser mayor a cero.</span>
+          }
         </div>
 
         <div class="field full">
           <label>Descripción / Comentario *</label>
           <textarea [(ngModel)]="form.comentarioCliente" name="comentarioCliente" required #comentCit="ngModel"
                     rows="3" placeholder="Descripción de la cita..."></textarea>
-          <span class="field-error" *ngIf="comentCit.invalid && comentCit.touched">La descripción es obligatoria.</span>
+          @if (comentCit.invalid && comentCit.touched) {
+          <span class="field-error">La descripción es obligatoria.</span>
+          }
         </div>
 
-        <div *ngIf="errorCita" class="status-box error full">{{ errorCita }}</div>
-        <div *ngIf="exitoCita" class="status-box success full">{{ exitoCita }}</div>
+        @if (errorCita) {
+        <div class="status-box error full">{{ errorCita }}</div>
+        }
+        @if (exitoCita) {
+        <div class="status-box success full">{{ exitoCita }}</div>
+        }
 
         <div class="full actions">
           <button type="submit" class="primary" [disabled]="guardandoCita">
@@ -113,9 +141,11 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </select>
         <select [(ngModel)]="profesionalFiltro">
           <option value="">Todos los profesionales</option>
-          <option *ngFor="let profesional of profesionales" [value]="profesional.id">
+          @for (profesional of profesionales; track profesional.id) {
+          <option [value]="profesional.id">
             {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
           </option>
+          }
         </select>
         <input [(ngModel)]="fechaInicioFiltro" type="date" />
         <input [(ngModel)]="fechaFinFiltro" type="date" />
@@ -126,8 +156,10 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
     <p *ngIf="loading" class="status">Cargando citas...</p>
     <p *ngIf="error" class="status error">{{ error }}</p>
 
-    <section class="grid cards" *ngIf="!loading && !error">
-      <article class="card" *ngFor="let cita of citas">
+    @if (!loading && !error) {
+    <section class="grid cards">
+      @for (cita of citas; track cita.id) {
+      <article class="card">
         <span class="record-id">CIT-{{ cita.id }}</span>
         <div class="line">
           <strong>Cliente</strong>
@@ -163,7 +195,9 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
         <a class="detail-link" [routerLink]="['/citas', cita.id]">Ver detalle</a>
       </article>
+      }
     </section>
+    }
   `,
   styles: [
     `

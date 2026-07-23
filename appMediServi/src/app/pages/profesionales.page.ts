@@ -42,9 +42,13 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
       <div *ngIf="loading" class="status-box loading">Cargando profesionales...</div>
       <div *ngIf="error" class="status-box error">{{ error }}</div>
 
-      <div class="table-wrap" *ngIf="!loading">
-        <p *ngIf="profesionales.length === 0 && !error" class="empty-msg">No se encontraron profesionales con los filtros aplicados.</p>
-        <table *ngIf="profesionales.length > 0">
+      @if (!loading) {
+      <div class="table-wrap">
+        @if (profesionales.length === 0 && !error) {
+        <p class="empty-msg">No se encontraron profesionales con los filtros aplicados.</p>
+        }
+        @if (profesionales.length > 0) {
+        <table>
           <thead>
             <tr>
               <th>ID</th>
@@ -57,7 +61,8 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of profesionales">
+            @for (p of profesionales; track p.id) {
+            <tr>
               <td><span class="record-id">PRO-{{ p.id }}</span></td>
               <td>{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</td>
               <td>{{ p.tituloProfesional }}</td>
@@ -76,9 +81,12 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
                 <a class="detail-link" [routerLink]="['/profesionales', p.id]">Ver detalle</a>
               </td>
             </tr>
+            }
           </tbody>
         </table>
+        }
       </div>
+      }
     </section>
 
     <section class="card" style="margin-top:1rem">
@@ -96,21 +104,27 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
           <label>Nombre *</label>
           <input [(ngModel)]="form.nombre" name="nombre" required #nombre="ngModel"
                  placeholder="Nombre del profesional" />
-          <span class="field-error" *ngIf="nombre.invalid && nombre.touched">El nombre es obligatorio.</span>
+          @if (nombre.invalid && nombre.touched) {
+          <span class="field-error">El nombre es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Apellidos *</label>
           <input [(ngModel)]="form.apellidos" name="apellidos" required #apellidos="ngModel"
                  placeholder="Apellidos" />
-          <span class="field-error" *ngIf="apellidos.invalid && apellidos.touched">Los apellidos son obligatorios.</span>
+          @if (apellidos.invalid && apellidos.touched) {
+          <span class="field-error">Los apellidos son obligatorios.</span>
+          }
         </div>
 
         <div class="field">
           <label>Correo electrónico *</label>
           <input [(ngModel)]="form.email" name="email" type="email" required #email="ngModel"
                  placeholder="correo@ejemplo.com" />
-          <span class="field-error" *ngIf="email.invalid && email.touched">Ingrese un correo válido.</span>
+          @if (email.invalid && email.touched) {
+          <span class="field-error">Ingrese un correo válido.</span>
+          }
         </div>
 
         <div class="field">
@@ -118,32 +132,42 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
           <input [(ngModel)]="form.telefono" name="telefono" placeholder="Número de teléfono" />
         </div>
 
-        <div class="field" *ngIf="!editandoId">
+        @if (!editandoId) {
+        <div class="field">
           <label>Contraseña *</label>
           <input [(ngModel)]="form.password" name="password" type="password"
                  [required]="!editandoId" #pwd="ngModel" placeholder="Contraseña temporal" />
-          <span class="field-error" *ngIf="pwd.invalid && pwd.touched">La contraseña es obligatoria.</span>
+          @if (pwd.invalid && pwd.touched) {
+          <span class="field-error">La contraseña es obligatoria.</span>
+          }
         </div>
+        }
 
         <div class="field">
           <label>Título profesional *</label>
           <input [(ngModel)]="form.tituloProfesional" name="tituloProfesional" required
                  #titulo="ngModel" placeholder="Ej: Médico General" />
-          <span class="field-error" *ngIf="titulo.invalid && titulo.touched">El título es obligatorio.</span>
+          @if (titulo.invalid && titulo.touched) {
+          <span class="field-error">El título es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Años de experiencia *</label>
           <input [(ngModel)]="form.aniosExperiencia" name="aniosExperiencia" type="number"
                  required min="0" #exp="ngModel" placeholder="0" />
-          <span class="field-error" *ngIf="exp.invalid && exp.touched">Ingrese un valor válido (≥ 0).</span>
+          @if (exp.invalid && exp.touched) {
+          <span class="field-error">Ingrese un valor válido (≥ 0).</span>
+          }
         </div>
 
         <div class="field">
           <label>Tarifa base (₡) *</label>
           <input [(ngModel)]="form.tarifaBase" name="tarifaBase" type="number"
                  required min="1" #tarifa="ngModel" placeholder="0" />
-          <span class="field-error" *ngIf="tarifa.invalid && tarifa.touched">La tarifa debe ser mayor a cero.</span>
+          @if (tarifa.invalid && tarifa.touched) {
+          <span class="field-error">La tarifa debe ser mayor a cero.</span>
+          }
         </div>
 
         <div class="field">
@@ -167,42 +191,55 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
           <label>Provincia *</label>
           <input [(ngModel)]="form.provincia" name="provincia" required #prov="ngModel"
                  placeholder="Ej: San José" />
-          <span class="field-error" *ngIf="prov.invalid && prov.touched">La provincia es obligatoria.</span>
+          @if (prov.invalid && prov.touched) {
+          <span class="field-error">La provincia es obligatoria.</span>
+          }
         </div>
 
         <div class="field">
           <label>Cantón *</label>
           <input [(ngModel)]="form.canton" name="canton" required #canton="ngModel"
                  placeholder="Ej: Central" />
-          <span class="field-error" *ngIf="canton.invalid && canton.touched">El cantón es obligatorio.</span>
+          @if (canton.invalid && canton.touched) {
+          <span class="field-error">El cantón es obligatorio.</span>
+          }
         </div>
 
         <div class="field">
           <label>Distrito *</label>
           <input [(ngModel)]="form.distrito" name="distrito" required #distrito="ngModel"
                  placeholder="Ej: Carmen" />
-          <span class="field-error" *ngIf="distrito.invalid && distrito.touched">El distrito es obligatorio.</span>
+          @if (distrito.invalid && distrito.touched) {
+          <span class="field-error">El distrito es obligatorio.</span>
+          }
         </div>
 
         <div class="field full">
           <label>Descripción *</label>
           <textarea [(ngModel)]="form.descripcion" name="descripcion" required #desc="ngModel"
                     rows="3" placeholder="Descripción del profesional..."></textarea>
-          <span class="field-error" *ngIf="desc.invalid && desc.touched">La descripción es obligatoria.</span>
+          @if (desc.invalid && desc.touched) {
+          <span class="field-error">La descripción es obligatoria.</span>
+          }
         </div>
 
         <div class="field full">
           <label>Imagen de perfil</label>
           <input type="file" accept="image/jpeg,image/png,image/webp"
                  (change)="seleccionarImagen($event)" />
-          <div *ngIf="imagenPreview" class="img-preview">
+          @if (imagenPreview) {
+          <div class="img-preview">
             <img [src]="imagenPreview" alt="Vista previa" />
           </div>
-          <div *ngIf="form.imagenPerfil && !imagenPreview" class="img-preview">
+          } @else if (form.imagenPerfil) {
+          <div class="img-preview">
             <img [src]="api.getImageUrl(form.imagenPerfil)" alt="Imagen actual" />
             <span class="muted">Imagen actual: {{ form.imagenPerfil }}</span>
           </div>
-          <div *ngIf="subiendoImagen" class="status-box loading">Subiendo imagen...</div>
+          }
+          @if (subiendoImagen) {
+          <div class="status-box loading">Subiendo imagen...</div>
+          }
         </div>
 
         <div class="field full">
@@ -210,18 +247,25 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
           <div class="inline-add">
             <select [(ngModel)]="especialidadSeleccionada" name="especialidadSeleccionada">
               <option [ngValue]="null">— Seleccionar especialidad —</option>
-              <option *ngFor="let e of especialidades" [ngValue]="e.id">{{ e.nombre }}</option>
+              @for (e of especialidades; track e.id) {
+              <option [ngValue]="e.id">{{ e.nombre }}</option>
+              }
             </select>
             <button type="button" class="btn-outline" (click)="agregarEspecialidad()">Agregar</button>
           </div>
 
-          <div *ngIf="especialidadesSeleccionadas.length > 0" class="tags-list">
-            <span class="tag" *ngFor="let e of especialidadesSeleccionadas">
+          @if (especialidadesSeleccionadas.length > 0) {
+          <div class="tags-list">
+            @for (e of especialidadesSeleccionadas; track e.id) {
+            <span class="tag">
               {{ e.nombre }}
               <button type="button" class="tag-remove" (click)="quitarEspecialidad(e.id)">✕</button>
             </span>
+            }
           </div>
-          <p class="muted" *ngIf="especialidadesSeleccionadas.length === 0">Sin especialidades seleccionadas.</p>
+          } @else {
+          <p class="muted">Sin especialidades seleccionadas.</p>
+          }
         </div>
 
         <div class="full actions">

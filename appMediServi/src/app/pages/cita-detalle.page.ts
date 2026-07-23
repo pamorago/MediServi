@@ -12,7 +12,7 @@ import { Cita } from '../core/models';
     <div *ngIf="loading" class="status-box loading">Cargando detalle de la cita...</div>
     <div *ngIf="error" class="status-box error">{{ error }}</div>
 
-    <ng-container *ngIf="cita && !loading">
+    @if (cita && !loading) {
 
       <section class="card detail-header">
         <div class="cit-hero">
@@ -89,17 +89,19 @@ import { Cita } from '../core/models';
           </dl>
         </section>
 
-        <section class="card full-col" *ngIf="cita.comentarioCliente">
+        @if (cita.comentarioCliente) {
+        <section class="card full-col">
           <h3 class="section-title">Descripción / Comentario</h3>
           <p class="descripcion">{{ cita.comentarioCliente }}</p>
         </section>
+        }
 
       </div>
 
       <div style="margin-top:1rem">
         <a class="btn-back" routerLink="/citas">← Volver al listado</a>
       </div>
-    </ng-container>
+    }
   `,
   styles: [`
     .status-box {

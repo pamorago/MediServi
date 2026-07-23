@@ -37,19 +37,23 @@ import { ApiService } from '../core/api.service';
       </section>
 
       <section class="grid info-grid">
-        <article class="card" *ngFor="let item of datosInstitucionales">
+        @for (item of datosInstitucionales; track item.etiqueta) {
+        <article class="card">
           <h3>{{ item.etiqueta }}</h3>
           <p>{{ item.valor }}</p>
         </article>
+        }
       </section>
 
       <section class="card">
         <h3>Compromiso asistencial</h3>
         <div class="grid commitment-grid">
-          <article class="tile" *ngFor="let compromiso of compromisosClinicos">
+          @for (compromiso of compromisosClinicos; track compromiso.titulo) {
+          <article class="tile">
             <h4>{{ compromiso.titulo }}</h4>
             <p>{{ compromiso.detalle }}</p>
           </article>
+          }
         </div>
       </section>
 
@@ -59,15 +63,21 @@ import { ApiService } from '../core/api.service';
           <a routerLink="/especialidades">Ver especialidades</a>
         </div>
         <div class="grid service-grid">
-          <article class="service-item" *ngFor="let categoria of categoriasDestacadas">
+          @for (categoria of categoriasDestacadas; track $index) {
+          <article class="service-item">
             <h4>{{ categoria.nombre }}</h4>
             <p>{{ categoria.descripcion || 'Atencion clinica profesional con valoracion y plan de accion.' }}</p>
           </article>
+          }
         </div>
       </section>
 
-      <p *ngIf="loading" class="status">Cargando panel clinico...</p>
-      <p *ngIf="error" class="status error">{{ error }}</p>
+      @if (loading) {
+      <p class="status">Cargando panel clinico...</p>
+      }
+      @if (error) {
+      <p class="status error">{{ error }}</p>
+      }
     </div>
   `,
   styles: [
