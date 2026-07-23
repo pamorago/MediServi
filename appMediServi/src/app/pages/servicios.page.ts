@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
@@ -8,7 +7,7 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
 @Component({
   selector: 'app-servicios-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   template: `
     <section class="card">
       <div class="module-head">

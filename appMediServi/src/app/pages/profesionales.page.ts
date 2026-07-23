@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
@@ -8,7 +8,7 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
 @Component({
   selector: 'app-profesionales-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink],
   template: `
     <section class="card">
       <div class="module-head">
@@ -39,8 +39,12 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
         <button type="button" class="btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
       </div>
 
-      <div *ngIf="loading" class="status-box loading">Cargando profesionales...</div>
-      <div *ngIf="error" class="status-box error">{{ error }}</div>
+      @if (loading) {
+      <div class="status-box loading">Cargando profesionales...</div>
+      }
+      @if (error) {
+      <div class="status-box error">{{ error }}</div>
+      }
 
       @if (!loading) {
       <div class="table-wrap">
@@ -95,8 +99,12 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
         <h3>{{ editandoId ? 'Editar profesional #' + editandoId : 'Registrar profesional' }}</h3>
       </div>
 
-      <div *ngIf="formError" class="status-box error">{{ formError }}</div>
-      <div *ngIf="formExito" class="status-box success">{{ formExito }}</div>
+      @if (formError) {
+      <div class="status-box error">{{ formError }}</div>
+      }
+      @if (formExito) {
+      <div class="status-box success">{{ formExito }}</div>
+      }
 
       <form (ngSubmit)="guardar()" #formPro="ngForm" class="form-grid" novalidate>
 

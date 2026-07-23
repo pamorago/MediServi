@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { Especialidad } from '../core/models';
@@ -7,7 +6,7 @@ import { Especialidad } from '../core/models';
 @Component({
   selector: 'app-especialidades-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <section class="card module-banner esp-banner">
       <div class="module-head">
@@ -27,8 +26,12 @@ import { Especialidad } from '../core/models';
       </div>
     </section>
 
-    <p *ngIf="loading" class="status">Cargando especialidades...</p>
-    <p *ngIf="error" class="status error">{{ error }}</p>
+    @if (loading) {
+    <p class="status">Cargando especialidades...</p>
+    }
+    @if (error) {
+    <p class="status error">{{ error }}</p>
+    }
 
     @if (!loading && !error) {
     <section class="grid cards">

@@ -153,8 +153,12 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
       </div>
     </section>
 
-    <p *ngIf="loading" class="status">Cargando citas...</p>
-    <p *ngIf="error" class="status error">{{ error }}</p>
+    @if (loading) {
+    <p class="status">Cargando citas...</p>
+    }
+    @if (error) {
+    <p class="status error">{{ error }}</p>
+    }
 
     @if (!loading && !error) {
     <section class="grid cards">

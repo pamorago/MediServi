@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { Usuario } from '../core/models';
@@ -7,7 +6,7 @@ import { Usuario } from '../core/models';
 @Component({
   selector: 'app-usuarios-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <section class="card">
       <div class="module-head">
@@ -47,8 +46,12 @@ import { Usuario } from '../core/models';
         <button type="button" (click)="limpiarFiltros()">Limpiar</button>
       </div>
 
-      <p *ngIf="loading" class="status">Cargando usuarios...</p>
-      <p *ngIf="error" class="status error">{{ error }}</p>
+      @if (loading) {
+      <p class="status">Cargando usuarios...</p>
+      }
+      @if (error) {
+      <p class="status error">{{ error }}</p>
+      }
 
       @if (!loading && !error) {
       <div class="table-wrap">

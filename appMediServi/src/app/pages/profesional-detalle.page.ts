@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Profesional } from '../core/models';
@@ -7,10 +7,14 @@ import { Profesional } from '../core/models';
 @Component({
   selector: 'app-profesional-detalle-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [DecimalPipe, RouterLink],
   template: `
-    <div *ngIf="loading" class="status-box loading">Cargando detalle del profesional...</div>
-    <div *ngIf="error" class="status-box error">{{ error }}</div>
+    @if (loading) {
+    <div class="status-box loading">Cargando detalle del profesional...</div>
+    }
+    @if (error) {
+    <div class="status-box error">{{ error }}</div>
+    }
 
     @if (profesional && !loading) {
       <section class="card detail-header">

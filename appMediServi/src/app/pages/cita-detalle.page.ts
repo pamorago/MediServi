@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Cita } from '../core/models';
@@ -7,10 +7,14 @@ import { Cita } from '../core/models';
 @Component({
   selector: 'app-cita-detalle-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, DatePipe, DecimalPipe, RouterLink],
   template: `
-    <div *ngIf="loading" class="status-box loading">Cargando detalle de la cita...</div>
-    <div *ngIf="error" class="status-box error">{{ error }}</div>
+    @if (loading) {
+    <div class="status-box loading">Cargando detalle de la cita...</div>
+    }
+    @if (error) {
+    <div class="status-box error">{{ error }}</div>
+    }
 
     @if (cita && !loading) {
 
