@@ -3,11 +3,12 @@ import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Profesional } from '../core/models';
+import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
 
 @Component({
   selector: 'app-profesional-detalle-page',
   standalone: true,
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, RouterLink, MapaLeafletComponent],
   template: `
     @if (loading) {
     <div class="status-box loading">Cargando detalle del profesional...</div>
@@ -107,6 +108,11 @@ import { Profesional } from '../core/models';
           </ul>
         </section>
         }
+
+        <section class="card full-col">
+          <h3 class="section-title">Ubicación en mapa</h3>
+          <app-mapa-leaflet [profesionales]="[profesional]" />
+        </section>
 
       </div>
 

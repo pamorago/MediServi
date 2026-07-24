@@ -4,11 +4,12 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
+import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
 
 @Component({
   selector: 'app-profesionales-page',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink, MapaLeafletComponent],
   template: `
     <section class="card">
       <div class="module-head">
@@ -39,6 +40,25 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
         <button type="button" class="btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
       </div>
 
+      <div class="view-toggle" role="group" aria-label="Seleccionar tipo de vista">
+        <button
+          type="button"
+          class="btn-outline"
+          [class.active]="vista === 'tabla'"
+          (click)="vista = 'tabla'"
+        >
+          Tabla
+        </button>
+        <button
+          type="button"
+          class="btn-outline"
+          [class.active]="vista === 'mapa'"
+          (click)="vista = 'mapa'"
+        >
+          Mapa
+        </button>
+      </div>
+
       @if (loading) {
       <div class="status-box loading">Cargando profesionales...</div>
       }
@@ -47,49 +67,55 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
       }
 
       @if (!loading) {
-      <div class="table-wrap">
-        @if (profesionales.length === 0 && !error) {
-        <p class="empty-msg">No se encontraron profesionales con los filtros aplicados.</p>
-        }
-        @if (profesionales.length > 0) {
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Título</th>
-              <th>Modalidad</th>
-              <th>Tarifa</th>
-              <th>Disponibilidad</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of profesionales; track p.id) {
-            <tr>
-              <td><span class="record-id">PRO-{{ p.id }}</span></td>
-              <td>{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</td>
-              <td>{{ p.tituloProfesional }}</td>
-              <td><span class="pill modalidad">{{ p.modalidad }}</span></td>
-              <td>₡{{ p.tarifaBase | number }}</td>
-              <td>
-                <span class="pill" [class.off]="!p.disponible">
-                  {{ p.disponible ? 'Disponible' : 'No disponible' }}
-                </span>
-              </td>
-              <td class="actions">
-                <button class="btn-sm" (click)="editar(p)">Editar</button>
-                <button class="btn-sm btn-warn" (click)="toggleDisponibilidad(p)">
-                  {{ p.disponible ? 'Desactivar' : 'Activar' }}
-                </button>
-                <a class="detail-link" [routerLink]="['/profesionales', p.id]">Ver detalle</a>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
-        }
-      </div>
+      @if (vista === 'tabla') {
+        <div class="table-wrap">
+          @if (profesionales.length === 0 && !error) {
+          <p class="empty-msg">No se encontraron profesionales con los filtros aplicados.</p>
+          }
+          @if (profesionales.length > 0) {
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Título</th>
+                <th>Modalidad</th>
+                <th>Tarifa</th>
+                <th>Disponibilidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of profesionales; track p.id) {
+              <tr>
+                <td><span class="record-id">PRO-{{ p.id }}</span></td>
+                <td>{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</td>
+                <td>{{ p.tituloProfesional }}</td>
+                <td><span class="pill modalidad">{{ p.modalidad }}</span></td>
+                <td>₡{{ p.tarifaBase | number }}</td>
+                <td>
+                  <span class="pill" [class.off]="!p.disponible">
+                    {{ p.disponible ? 'Disponible' : 'No disponible' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-sm" (click)="editar(p)">Editar</button>
+                  <button class="btn-sm btn-warn" (click)="toggleDisponibilidad(p)">
+                    {{ p.disponible ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <a class="detail-link" [routerLink]="['/profesionales', p.id]">Ver detalle</a>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          }
+        </div>
+      }
+
+      @if (vista === 'mapa') {
+        <app-mapa-leaflet [profesionales]="profesionales" />
+      }
       }
     </section>
 
@@ -314,6 +340,13 @@ import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
     .btn-warn:hover { background:#fbebd2; }
     .btn-outline { background:transparent; border:1px solid var(--color-outline); color:var(--color-text); }
     .btn-outline:hover { background:var(--color-soft); }
+    .view-toggle { display:flex; gap:.5rem; margin-top:.75rem; }
+    .view-toggle .btn-outline.active {
+      background:#e4f3ed;
+      border-color:#9ec8ba;
+      color:#1f5a4d;
+      font-weight:700;
+    }
     .inline-add { display:flex; gap:.5rem; align-items:center; }
     .inline-add select { flex:1; }
     .tags-list { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.5rem; }
@@ -350,6 +383,7 @@ export class ProfesionalesPageComponent implements OnInit {
   search = '';
   modalidadFiltro = '';
   disponibleFiltro = '';
+  vista: 'tabla' | 'mapa' = 'tabla';
 
   editandoId: number | null = null;
   especialidadSeleccionada: number | null = null;
