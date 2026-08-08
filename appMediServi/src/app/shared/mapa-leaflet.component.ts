@@ -12,6 +12,9 @@ import { Profesional } from '../core/models';
     @if (profesionales.length === 0) {
       <div class="status-box loading">No hay profesionales para mostrar en el mapa</div>
     } @else {
+      @if (sinUbicaciones) {
+        <div class="status-box loading">No se pudo ubicar a los profesionales en el mapa</div>
+      }
       <div class="mapa-wrap">
         <div [id]="mapId" class="mapa-container"></div>
       </div>
@@ -80,6 +83,7 @@ export class MapaLeafletComponent implements AfterViewInit, OnChanges, OnDestroy
   private readonly markersLayer = L.layerGroup();
   private renderToken = 0;
   readonly mapId = `mapa-leaflet-${Math.random().toString(36).slice(2, 9)}`;
+  sinUbicaciones = false;
 
   ngAfterViewInit(): void {
     this.scheduleRender();
@@ -92,6 +96,7 @@ export class MapaLeafletComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   ngOnDestroy(): void {
+    this.renderToken++;
     this.map?.remove();
     this.map = null;
   }
@@ -171,6 +176,8 @@ export class MapaLeafletComponent implements AfterViewInit, OnChanges, OnDestroy
 
       this.addMarkerForProfesional(item.profesional, item.point, bounds);
     }
+
+    this.sinUbicaciones = !bounds.isValid();
 
     if (bounds.isValid()) {
       this.map.fitBounds(bounds.pad(0.2));

@@ -111,7 +111,7 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
 
         <section class="card full-col">
           <h3 class="section-title">Ubicación en mapa</h3>
-          <app-mapa-leaflet [profesionales]="[profesional]" />
+          <app-mapa-leaflet [profesionales]="profesionalesParaMapa" />
         </section>
 
       </div>
@@ -198,6 +198,7 @@ export class ProfesionalDetallePageComponent implements OnInit {
   readonly api = inject(ApiService);
 
   profesional: Profesional | null = null;
+  profesionalesParaMapa: Profesional[] = [];
   loading = true;
   error = '';
 
@@ -206,6 +207,7 @@ export class ProfesionalDetallePageComponent implements OnInit {
     this.api.getProfesionalById(id).subscribe({
       next: (data: Profesional) => {
         this.profesional = data;
+        this.profesionalesParaMapa = [data];
         this.loading = false;
       },
       error: () => {
