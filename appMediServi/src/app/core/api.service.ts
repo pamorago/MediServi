@@ -2,11 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  CambiarEstadoCitaPayload,
   Categoria,
   Especialidad,
   Cita,
   CitaPayload,
   Profesional,
+  Resena,
+  ResenaPayload,
   ProfesionalPayload,
   Servicio,
   ServicioPayload,
@@ -117,5 +120,17 @@ export class ApiService {
 
   createCita(payload: CitaPayload): Observable<Cita> {
     return this.http.post<Cita>(`${this.baseUrl}/citas`, payload);
+  }
+
+  cambiarEstadoCita(id: number, payload: CambiarEstadoCitaPayload): Observable<Cita> {
+    return this.http.patch<Cita>(`${this.baseUrl}/citas/${id}/estado`, payload);
+  }
+
+  getResenas(params?: Record<string, string>): Observable<Resena[]> {
+    return this.http.get<Resena[]>(`${this.baseUrl}/resenas`, { params });
+  }
+
+  createResena(payload: ResenaPayload): Observable<Resena> {
+    return this.http.post<Resena>(`${this.baseUrl}/resenas`, payload);
   }
 }

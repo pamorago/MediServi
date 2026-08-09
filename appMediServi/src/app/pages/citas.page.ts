@@ -83,6 +83,11 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
 
         <div class="field">
+          <label>Hora de finalización</label>
+          <input [value]="horaFinCalculada || 'Se calcula automáticamente'" type="text" disabled />
+        </div>
+
+        <div class="field">
           <label>Modalidad *</label>
           <select [(ngModel)]="form.modalidad" name="modalidad" required>
             <option value="VIRTUAL">Virtual</option>
@@ -92,11 +97,8 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
 
         <div class="field">
-          <label>Monto estimado (₡) *</label>
-          <input [(ngModel)]="form.montoEstimado" type="number" name="montoEstimado" min="1" required #montoCit="ngModel" placeholder="0" />
-          @if (montoCit.invalid && montoCit.touched) {
-          <span class="field-error">El monto debe ser mayor a cero.</span>
-          }
+          <label>Monto estimado (₡)</label>
+          <input [value]="montoEstimadoCalculado" type="text" disabled />
         </div>
 
         <div class="field full">
@@ -312,11 +314,20 @@ export class CitasPageComponent implements OnInit {
     servicioId: 0,
     fechaCita: '',
     horaInicio: '',
-    horaFin: '',
     modalidad: 'MIXTA',
-    montoEstimado: 1,
     comentarioCliente: '',
   };
+
+  get montoEstimadoCalculado(): string {
+    const servicio = this.serviciosFiltrados.find((s) => s.id === Number(this.form.servicioId))
+      ?? this.servicios.find((s) => s.id === Number(this.form.servicioId));
+
+    if (!servicio) {
+      return 'Se calcula automáticamente';
+    }
+
+    return `₡${Number(servicio.precio).toLocaleString('es-CR')}`;
+  }
 
   get horaFinCalculada(): string {
     if (!this.form.horaInicio) return '';
@@ -392,7 +403,6 @@ export class CitasPageComponent implements OnInit {
       this.errorCita = 'Completá todos los campos requeridos.';
       return;
     }
-    this.form.horaFin = this.horaFinCalculada;
 
     this.guardandoCita = true;
     const payload: CitaPayload = {
@@ -400,7 +410,6 @@ export class CitasPageComponent implements OnInit {
       clienteId: Number(this.form.clienteId),
       perfilProfesionalId: Number(this.form.perfilProfesionalId),
       servicioId: Number(this.form.servicioId),
-      montoEstimado: Number(this.form.montoEstimado),
     };
 
     this.api.createCita(payload).subscribe({
@@ -413,9 +422,7 @@ export class CitasPageComponent implements OnInit {
           servicioId: 0,
           fechaCita: '',
           horaInicio: '',
-          horaFin: '',
           modalidad: 'MIXTA',
-          montoEstimado: 1,
           comentarioCliente: '',
         };
         this.serviciosFiltrados = [];

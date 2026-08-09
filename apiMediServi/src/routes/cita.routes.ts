@@ -7,6 +7,7 @@ router.get("/", citaController.getCitas);
 router.get("/:id", citaController.getCita);
 router.post("/", citaController.createCita);
 router.put("/:id", citaController.updateCita);
+router.patch("/:id/estado", citaController.cambiarEstadoCita);
 router.delete("/:id", citaController.deleteCita);
 
 export default router;

@@ -46,8 +46,12 @@ const createUsuario = async (req: Request, res: Response, next: NextFunction) =>
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "Nombre, apellidos, email y password son obligatorios" });
     }
 
+    if (data.rol && data.rol !== "CLIENTE") {
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: "El registro publico solo permite usuarios con rol CLIENTE" });
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const usuario = await usuarioService.createUsuario({ ...data, password: hashedPassword });
+    const usuario = await usuarioService.createUsuario({ ...data, rol: "CLIENTE", password: hashedPassword });
 
     res.status(StatusCodes.CREATED).json(usuario);
   } catch (error) {

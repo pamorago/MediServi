@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
 import citaService from "../services/cita.service";
-import type { CreateCitaDTO, UpdateCitaDTO } from "../dtos/cita.dto";
+import type { CambiarEstadoCitaDTO, CreateCitaDTO, UpdateCitaDTO } from "../dtos/cita.dto";
 
 const getCitas = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -43,7 +43,7 @@ const createCita = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = req.body as CreateCitaDTO;
 
-    if (!data.clienteId || !data.servicioId || !data.perfilProfesionalId || !data.fechaCita || !data.horaInicio || !data.horaFin || !data.modalidad || data.montoEstimado === undefined) {
+    if (!data.clienteId || !data.servicioId || !data.perfilProfesionalId || !data.fechaCita || !data.horaInicio || !data.modalidad) {
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "Todos los campos obligatorios deben ser enviados" });
     }
 
@@ -59,7 +59,31 @@ const updateCita = async (req: Request, res: Response, next: NextFunction) => {
     const id = Number(req.params.id);
     const data = req.body as UpdateCitaDTO;
 
+    if ((req.body as { estado?: string }).estado) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "El estado de la cita debe cambiarse mediante el endpoint de transiciones" });
+    }
+
     const cita = await citaService.updateCita(id, data);
+    res.json(cita);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cambiarEstadoCita = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    const data = req.body as CambiarEstadoCitaDTO;
+
+    if (!data.nuevoEstado || !data.actorId || !data.actorRol) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        error: "Debe indicar nuevoEstado, actorId y actorRol para realizar la transicion",
+      });
+    }
+
+    const cita = await citaService.cambiarEstadoCita(id, data);
     res.json(cita);
   } catch (error) {
     next(error);
@@ -81,5 +105,6 @@ export default {
   getCita,
   createCita,
   updateCita,
+  cambiarEstadoCita,
   deleteCita,
 };

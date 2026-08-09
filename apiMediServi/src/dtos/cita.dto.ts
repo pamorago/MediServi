@@ -4,9 +4,7 @@ export interface CreateCitaDTO {
   perfilProfesionalId: number;
   fechaCita: string;
   horaInicio: string;
-  horaFin: string;
   modalidad: "VIRTUAL" | "PRESENCIAL" | "MIXTA";
-  montoEstimado: number;
   comentarioCliente?: string;
 }
 
@@ -15,8 +13,15 @@ export interface UpdateCitaDTO {
   horaInicio?: string;
   horaFin?: string;
   modalidad?: "VIRTUAL" | "PRESENCIAL" | "MIXTA";
-  estado?: "PENDIENTE" | "ACEPTADA" | "RECHAZADA" | "CANCELADA" | "COMPLETADA";
   comentarioCliente?: string;
   comentarioProfesional?: string;
   montoEstimado?: number;
+}
+
+export interface CambiarEstadoCitaDTO {
+  nuevoEstado: "ACEPTADA" | "RECHAZADA" | "CANCELADA" | "COMPLETADA";
+  actorId: number;
+  actorRol: "ADMINISTRADOR" | "PROFESIONAL" | "CLIENTE";
+  motivo?: string;
+  comentarioProfesional?: string;
 }

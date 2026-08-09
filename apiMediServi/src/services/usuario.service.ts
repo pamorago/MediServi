@@ -36,7 +36,15 @@ const getUsuarioById = async (id: number) => {
 
 const createUsuario = async (data: CreateUsuarioDTO) => {
   return prisma.usuario.create({
-    data,
+    data: {
+      nombre: data.nombre,
+      apellidos: data.apellidos,
+      email: data.email,
+      password: data.password,
+      telefono: data.telefono,
+      rol: data.rol ?? "CLIENTE",
+      estado: data.estado ?? "ACTIVO",
+    },
   });
 };
 

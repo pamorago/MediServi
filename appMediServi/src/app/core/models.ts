@@ -45,6 +45,18 @@ export interface Cita {
   servicio?: Servicio;
   profesional?: Profesional;
   resena?: Resena;
+  historial?: HistorialCita[];
+}
+
+export interface HistorialCita {
+  id: number;
+  citaId: number;
+  estadoAnterior: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'CANCELADA' | 'COMPLETADA' | null;
+  estadoNuevo: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'CANCELADA' | 'COMPLETADA';
+  motivo?: string | null;
+  cambiadoPorId: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Resena {
@@ -136,8 +148,21 @@ export interface CitaPayload {
   perfilProfesionalId: number;
   fechaCita: string;
   horaInicio: string;
-  horaFin: string;
   modalidad: 'VIRTUAL' | 'PRESENCIAL' | 'MIXTA';
-  montoEstimado: number;
   comentarioCliente: string;
+}
+
+export interface CambiarEstadoCitaPayload {
+  nuevoEstado: 'ACEPTADA' | 'RECHAZADA' | 'CANCELADA' | 'COMPLETADA';
+  actorId: number;
+  actorRol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE';
+  motivo?: string;
+  comentarioProfesional?: string;
+}
+
+export interface ResenaPayload {
+  citaId: number;
+  clienteId: number;
+  puntuacion: number;
+  comentario?: string;
 }
