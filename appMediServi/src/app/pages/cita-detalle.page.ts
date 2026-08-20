@@ -1,13 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { Cita } from '../core/models';
+import { AuthService } from '../core/services/auth.service';
+import { Cita, ResenaPayload } from '../core/models';
 
 @Component({
   selector: 'app-cita-detalle-page',
   standalone: true,
-  imports: [CommonModule, DatePipe, DecimalPipe, RouterLink],
+  imports: [CommonModule, DatePipe, DecimalPipe, FormsModule, RouterLink],
   template: `
     @if (loading) {
     <div class="status-box loading">Cargando detalle de la cita...</div>
@@ -100,6 +102,52 @@ import { Cita } from '../core/models';
         </section>
         }
 
+        <section class="card full-col review-section">
+          <h3 class="section-title">Reseña y calificación</h3>
+
+          @if (cita.resena; as resena) {
+          <div class="review-readonly">
+            <div class="review-rating" aria-label="Puntuación">
+              <span class="stars">{{ estrellas(resena.puntuacion) }}</span>
+              <strong>{{ resena.puntuacion }}/5</strong>
+            </div>
+            @if (resena.comentario) {
+            <p class="descripcion">{{ resena.comentario }}</p>
+            }
+            <small>Publicada el {{ resena.createdAt | date: 'dd/MM/yyyy' }}</small>
+          </div>
+          } @else if (puedeCalificar()) {
+          <form (ngSubmit)="crearResena(formResena)" #formResena="ngForm" class="review-form" novalidate>
+            <div class="field">
+              <label for="puntuacion">Puntuación *</label>
+              <select id="puntuacion" [(ngModel)]="resenaForm.puntuacion" name="puntuacion" required>
+                <option [ngValue]="0">Seleccione una puntuación</option>
+                @for (puntuacion of puntuaciones; track puntuacion) {
+                <option [ngValue]="puntuacion">{{ estrellas(puntuacion) }} {{ puntuacion }}/5</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="comentario">Comentario (opcional)</label>
+              <textarea id="comentario" [(ngModel)]="resenaForm.comentario" name="comentario"
+                        maxlength="500" rows="4" placeholder="Contá cómo fue tu experiencia..."></textarea>
+              <span class="field-hint">{{ (resenaForm.comentario ?? '').length }}/500</span>
+            </div>
+            @if (reviewError) {
+            <div class="status-box error">{{ reviewError }}</div>
+            }
+            @if (reviewSuccess) {
+            <div class="status-box success">{{ reviewSuccess }}</div>
+            }
+            <button type="submit" class="primary" [disabled]="guardandoResena">
+              {{ guardandoResena ? 'Enviando...' : 'Publicar calificación' }}
+            </button>
+          </form>
+          } @else {
+          <p class="review-hint">La reseña solo está disponible para el cliente dueño de una cita completada.</p>
+          }
+        </section>
+
       </div>
 
       <div style="margin-top:1rem">
@@ -113,6 +161,7 @@ import { Cita } from '../core/models';
     }
     .status-box.loading { background:#f0f7ff; color:#1a5276; border:1px solid #aed6f1; }
     .status-box.error { background:#fdf2f2; color:#c0392b; border:1px solid #f5b7b1; }
+    .status-box.success { background:#f0faf5; color:#1e8449; border:1px solid #a9dfbf; }
 
     .detail-header { margin-bottom:1rem; }
     .cit-hero { display:flex; flex-direction:column; gap:.5rem; }
@@ -136,6 +185,15 @@ import { Cita } from '../core/models';
     dd { margin:0; font-size:.9rem; }
 
     .descripcion { font-size:.9rem; line-height:1.6; color:var(--color-text); margin:0; }
+    .review-form { display:grid; gap:.8rem; max-width:520px; }
+    .field { display:flex; flex-direction:column; gap:.3rem; }
+    .field label { font-size:.82rem; font-weight:600; }
+    .field select, .field textarea { font:inherit; border:1px solid var(--color-outline); border-radius:8px; padding:.55rem .65rem; }
+    .field-hint, .review-readonly small { color:var(--color-subtle); font-size:.78rem; }
+    .review-rating { display:flex; align-items:center; gap:.55rem; margin-bottom:.6rem; }
+    .stars { color:#d99b1d; letter-spacing:.08em; font-size:1.15rem; }
+    .review-readonly { display:grid; gap:.25rem; }
+    .review-hint { color:var(--color-subtle); font-size:.88rem; margin:0; }
 
     .pill {
       display:inline-block; border-radius:999px; padding:.2rem .55rem;
@@ -162,21 +220,73 @@ import { Cita } from '../core/models';
 export class CitaDetallePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ApiService);
+  private readonly authService = inject(AuthService);
 
   cita: Cita | null = null;
   loading = true;
   error = '';
+  guardandoResena = false;
+  reviewError = '';
+  reviewSuccess = '';
+  readonly puntuaciones = [1, 2, 3, 4, 5];
+  resenaForm: ResenaPayload = { citaId: 0, clienteId: 0, puntuacion: 0, comentario: '' };
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.cargarCita(id);
+  }
+
+  cargarCita(id: number): void {
+    this.loading = true;
     this.api.getCitaById(id).subscribe({
       next: (data) => {
         this.cita = data;
+        const usuario = this.authService.usuario();
+        this.resenaForm = { citaId: data.id, clienteId: usuario?.id ?? 0, puntuacion: 0, comentario: '' };
         this.loading = false;
       },
       error: () => {
         this.error = 'No se pudo cargar el detalle de la cita.';
         this.loading = false;
+      },
+    });
+  }
+
+  puedeCalificar(): boolean {
+    const usuario = this.authService.usuario();
+    return !!this.cita && this.authService.esCliente() && usuario?.id === this.cita.clienteId
+      && this.cita.estado === 'COMPLETADA' && !this.cita.resena;
+  }
+
+  estrellas(puntuacion: number): string {
+    return '★'.repeat(puntuacion) + '☆'.repeat(5 - puntuacion);
+  }
+
+  crearResena(formRef: NgForm): void {
+    formRef.form.markAllAsTouched();
+    this.reviewError = '';
+    this.reviewSuccess = '';
+    if (formRef.invalid || !this.resenaForm.puntuacion) {
+      this.reviewError = 'Seleccioná una puntuación entre 1 y 5.';
+      return;
+    }
+
+    this.guardandoResena = true;
+    this.api.createResena({
+      ...this.resenaForm,
+      citaId: this.cita?.id ?? 0,
+      clienteId: this.authService.usuario()?.id ?? 0,
+      puntuacion: Number(this.resenaForm.puntuacion),
+      comentario: this.resenaForm.comentario?.trim() || undefined,
+    }).subscribe({
+      next: () => {
+        this.reviewSuccess = 'La calificación se publicó correctamente.';
+        this.guardandoResena = false;
+        this.cargarCita(this.cita?.id ?? 0);
+      },
+      error: (err) => {
+        this.reviewError = err?.error?.error ?? 'No se pudo publicar la calificación.';
+        this.guardandoResena = false;
       },
     });
   }
