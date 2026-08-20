@@ -59,17 +59,51 @@ export class Agenda implements OnInit, OnChanges {
                 ? this.citas
                 : this.citas.filter((c) => c.estado === this.filtroSeleccionado);
 
-        const events = citasFiltradas.map((cita) => ({
-            id: cita.id.toString(),
-            title: `${cita.cliente?.nombre || 'Cliente'} - ${cita.servicio?.nombre || 'Servicio'}`,
-            start: `${cita.fechaCita}T${cita.horaInicio}`,
-            end: `${cita.fechaCita}T${cita.horaFin}`,
-            backgroundColor: this.getColorPorEstado(cita.estado),
-            borderColor: this.getColorPorEstado(cita.estado),
-            extendedProps: cita,
-        }));
+        const events = citasFiltradas
+            .map((cita) => {
+                const start = this.combinarFechaHora(cita.fechaCita, cita.horaInicio);
+                const end = this.combinarFechaHora(cita.fechaCita, cita.horaFin);
+                if (!start || !end) return null;
+
+                return {
+                    id: cita.id.toString(),
+                    title: `${cita.cliente?.nombre || 'Cliente'} - ${cita.servicio?.nombre || 'Servicio'}`,
+                    start,
+                    end,
+                    backgroundColor: this.getColorPorEstado(cita.estado),
+                    borderColor: this.getColorPorEstado(cita.estado),
+                    extendedProps: cita,
+                };
+            })
+            .filter((evento): evento is NonNullable<typeof evento> => evento !== null);
 
         this.calendarOptions = { ...this.calendarOptions, events };
+    }
+
+    /**
+     * El API entrega `fechaCita` y `horaInicio`/`horaFin` como columnas
+     * DateTime separadas (Prisma), es decir, ambas llegan como strings ISO
+     * completos (p. ej. "2026-08-15T00:00:00.000Z" y
+     * "1970-01-01T14:00:00.000Z"). No se pueden concatenar como texto:
+     * hay que tomar la fecha de una y la hora local de la otra y combinarlas
+     * en un único Date para que FullCalendar pueda representarlo.
+     */
+    private combinarFechaHora(fechaCita: string, hora: string): Date | null {
+        const fecha = new Date(fechaCita);
+        const horaDate = new Date(hora);
+
+        if (Number.isNaN(fecha.getTime()) || Number.isNaN(horaDate.getTime())) {
+            return null;
+        }
+
+        const combinada = new Date(fecha);
+        combinada.setHours(
+            horaDate.getHours(),
+            horaDate.getMinutes(),
+            horaDate.getSeconds(),
+            0
+        );
+        return combinada;
     }
 
     private getColorPorEstado(estado: string): string {
