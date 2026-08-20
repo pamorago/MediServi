@@ -1,0 +1,157 @@
+.agenda-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.agenda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+
+  h2 {
+    margin: 0;
+    color: #333;
+    font-size: 20px;
+  }
+}
+
+.filtro-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+}
+
+::ng-deep .fc {
+  font-family: inherit;
+}
+
+::ng-deep .fc-button-primary {
+  background-color: #667eea;
+  border-color: #667eea;
+
+  &:not(:disabled).fc-button-active {
+    background-color: #5568d3;
+    border-color: #5568d3;
+  }
+
+  &:hover {
+    background-color: #5568d3;
+    border-color: #5568d3;
+  }
+}
+
+::ng-deep .fc-event {
+  background-color: #667eea;
+  border-color: #667eea;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.cita-detalle {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-left: 4px solid #667eea;
+  border-radius: 5px;
+
+  h3 {
+    margin-top: 0;
+    color: #333;
+  }
+}
+
+.cita-info {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 15px;
+
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  strong {
+    color: #333;
+  }
+}
+
+.estado-PENDIENTE {
+  background-color: #ffc107;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.estado-ACEPTADA {
+  background-color: #28a745;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.estado-RECHAZADA {
+  background-color: #dc3545;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.estado-COMPLETADA {
+  background-color: #17a2b8;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.estado-CANCELADA {
+  background-color: #6c757d;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.btn-seleccionar {
+  padding: 10px 20px;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #5568d3;
+  }
+}
+
+.sin-datos {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+  font-style: italic;
+}

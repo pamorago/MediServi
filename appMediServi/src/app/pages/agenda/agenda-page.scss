@@ -1,0 +1,94 @@
+.agenda-banner {
+  border-left: 5px solid #667eea;
+  background: linear-gradient(165deg, #f8f7fd, #f0eefb);
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+
+  select,
+  input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #e9ecef;
+    color: #333;
+
+    &.primary {
+      background: #667eea;
+      color: white;
+    }
+  }
+}
+
+.status {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+
+  &.error {
+    color: #c0392b;
+  }
+}
+
+.cita-detalle-panel {
+  margin-top: 1rem;
+
+  .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7a5b13;
+    background: #f9efd2;
+
+    &.aceptada {
+      color: #1f5a49;
+      background: #dff3ec;
+    }
+
+    &.rechazada,
+    &.cancelada {
+      color: #7a1c1c;
+      background: #fbe6e6;
+    }
+
+    &.completada {
+      color: #2a445f;
+      background: #e3ecf8;
+    }
+  }
+
+  .detail-link {
+    display: inline-block;
+    margin-top: 0.4rem;
+    color: #4a3f9e;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

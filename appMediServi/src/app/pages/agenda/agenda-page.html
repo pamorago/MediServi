@@ -1,0 +1,67 @@
+<section class="card module-banner agenda-banner">
+  <div class="module-head">
+    <span class="module-id">MOD-AGE</span>
+    <h2>{{ tituloVista }}</h2>
+  </div>
+  <p>{{ descripcionVista }}</p>
+
+  @if (esAdministrador) {
+    <div class="toolbar">
+      <select [(ngModel)]="profesionalFiltro" (change)="cargarCitas()">
+        <option value="">Todos los profesionales</option>
+        @for (profesional of profesionales; track profesional.id) {
+          <option [value]="profesional.id">
+            {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
+          </option>
+        }
+      </select>
+      <input [(ngModel)]="fechaInicioFiltro" type="date" (change)="cargarCitas()" />
+      <input [(ngModel)]="fechaFinFiltro" type="date" (change)="cargarCitas()" />
+      <button class="primary" (click)="cargarCitas()">Aplicar filtros</button>
+      <button (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+  }
+</section>
+
+@if (loading) {
+  <p class="status">Cargando agenda...</p>
+}
+@if (error) {
+  <p class="status error">{{ error }}</p>
+}
+
+@if (!loading && !error) {
+  <app-agenda
+    [titulo]="tituloVista"
+    [citas]="citas"
+    [filtroOpciones]="filtroOpcionesEstado"
+    [isLoading]="loading"
+    (seleccion)="onSeleccionCita($event)"
+  ></app-agenda>
+}
+
+@if (citaSeleccionada) {
+  <section class="card cita-detalle-panel">
+    <div class="module-head">
+      <span class="module-id">CIT-{{ citaSeleccionada.id }}</span>
+      <h3>Detalle de la cita seleccionada</h3>
+    </div>
+    <div class="line">
+      <strong>Cliente</strong>
+      <span>{{ citaSeleccionada.cliente?.nombre }} {{ citaSeleccionada.cliente?.apellidos }}</span>
+    </div>
+    <div class="line">
+      <strong>Profesional</strong>
+      <span>{{ citaSeleccionada.profesional?.usuario?.nombre }} {{ citaSeleccionada.profesional?.usuario?.apellidos }}</span>
+    </div>
+    <div class="line">
+      <strong>Servicio</strong>
+      <span>{{ citaSeleccionada.servicio?.nombre }}</span>
+    </div>
+    <div class="line">
+      <strong>Estado</strong>
+      <span class="pill" [ngClass]="estadoCitaClass(citaSeleccionada.estado)">{{ citaSeleccionada.estado }}</span>
+    </div>
+    <a class="detail-link" [routerLink]="['/citas', citaSeleccionada.id]">Ver detalle completo</a>
+  </section>
+}

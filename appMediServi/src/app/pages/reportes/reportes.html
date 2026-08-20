@@ -1,0 +1,200 @@
+<div class="reportes-container">
+  <div class="reportes-header">
+    <h1>Reportes y Análisis</h1>
+    <div class="filtros">
+      <div class="filtro-field">
+        <label for="fechaInicio">Desde</label>
+        <input
+          id="fechaInicio"
+          type="date"
+          [(ngModel)]="fechaInicio"
+          (change)="cargarReportes()"
+          [max]="fechaFin || undefined"
+        />
+      </div>
+      <div class="filtro-field">
+        <label for="fechaFin">Hasta</label>
+        <input
+          id="fechaFin"
+          type="date"
+          [(ngModel)]="fechaFin"
+          (change)="cargarReportes()"
+          [min]="fechaInicio || undefined"
+        />
+      </div>
+      <div class="filtro-field">
+        <label for="profesionalFiltro">Profesional</label>
+        <select id="profesionalFiltro" [(ngModel)]="profesionalId" (change)="cargarReportes()">
+          <option [ngValue]="null">Todos</option>
+          @for (profesional of profesionales; track profesional.id) {
+            <option [ngValue]="profesional.id">
+              {{ profesional.usuario.nombre }} {{ profesional.usuario.apellidos }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="filtro-field">
+        <label for="categoriaFiltro">Categoría</label>
+        <select id="categoriaFiltro" [(ngModel)]="categoriaId" (change)="cargarReportes()">
+          <option [ngValue]="null">Todas</option>
+          @for (categoria of categorias; track categoria.id) {
+            <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        </select>
+      </div>
+      <button (click)="limpiarFiltros()" class="btn-limpiar" type="button">Limpiar</button>
+    </div>
+    @if (rangoFechaInvalido()) {
+      <p class="filtro-error">La fecha "Desde" no puede ser posterior a la fecha "Hasta".</p>
+    }
+    @if (periodoAplicado()) {
+      <p class="periodo-aplicado">Periodo: {{ periodoAplicado() }}</p>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-spinner">
+      <p>Cargando reportes...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="reporte-card">
+      <p class="error-mensaje">{{ errorMessage() }}</p>
+      <button class="btn-limpiar" type="button" (click)="cargarReportes()">Reintentar</button>
+    </div>
+  } @else {
+    <!-- Reporte de Citas por Estado -->
+    <div class="reporte-card">
+      <h2>Distribución de Citas por Estado</h2>
+      @if (citasPorEstado(); as reporte) {
+        @if (reporte.total === 0) {
+          <p class="sin-datos">No hay citas registradas para los filtros seleccionados.</p>
+        } @else {
+          <div class="chart-grid-2">
+            <div class="chart-container">
+              <apx-chart
+                [series]="chartCitasEstado.series"
+                [chart]="chartCitasEstado.chart"
+                [labels]="chartCitasEstado.labels || []"
+                [dataLabels]="chartCitasEstado.dataLabels"
+                [legend]="chartCitasEstado.legend"
+                [plotOptions]="chartCitasEstado.plotOptions"
+              ></apx-chart>
+            </div>
+            <div class="estadisticas-resumen">
+              <div class="stat-item">
+                <span class="stat-label">Total de Citas</span>
+                <span class="stat-value">{{ reporte.total }}</span>
+              </div>
+              <div class="stat-item pendiente">
+                <span class="stat-label">Pendiente</span>
+                <span class="stat-value">{{ reporte.estados.pendiente }}</span>
+                <span class="stat-percent">{{ reporte.porcentajes.pendiente | number: '1.0-0' }}%</span>
+              </div>
+              <div class="stat-item aceptada">
+                <span class="stat-label">Aceptada</span>
+                <span class="stat-value">{{ reporte.estados.aceptada }}</span>
+                <span class="stat-percent">{{ reporte.porcentajes.aceptada | number: '1.0-0' }}%</span>
+              </div>
+              <div class="stat-item rechazada">
+                <span class="stat-label">Rechazada</span>
+                <span class="stat-value">{{ reporte.estados.rechazada }}</span>
+                <span class="stat-percent">{{ reporte.porcentajes.rechazada | number: '1.0-0' }}%</span>
+              </div>
+              <div class="stat-item completada">
+                <span class="stat-label">Completada</span>
+                <span class="stat-value">{{ reporte.estados.completada }}</span>
+                <span class="stat-percent">{{ reporte.porcentajes.completada | number: '1.0-0' }}%</span>
+              </div>
+              <div class="stat-item cancelada">
+                <span class="stat-label">Cancelada</span>
+                <span class="stat-value">{{ reporte.estados.cancelada }}</span>
+                <span class="stat-percent">{{ reporte.porcentajes.cancelada | number: '1.0-0' }}%</span>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Reporte de Ocupación de Profesionales (solo ADMINISTRADOR) -->
+    @if (puedeVerReporteProfesional()) {
+      <div class="reporte-card">
+        <h2>Ocupación de Profesionales</h2>
+        @if (citasPorProfesional() && citasPorProfesional()!.length > 0) {
+          <div class="tabla-responsive">
+            <table class="tabla-reportes">
+              <thead>
+                <tr>
+                  <th>Profesional</th>
+                  <th>Total Citas</th>
+                  <th>Completadas</th>
+                  <th>% Completación</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (prof of citasPorProfesional(); track prof.id) {
+                  <tr>
+                    <td>{{ prof.nombre }} {{ prof.apellidos }}</td>
+                    <td>{{ prof.totalCitas }}</td>
+                    <td>{{ prof.citasCompletadas }}</td>
+                    <td>
+                      <div class="progress-bar">
+                        <div class="progress-fill" [style.width.%]="prof.porcentajeCompletacion">
+                          {{ prof.porcentajeCompletacion | number: '1.0-0' }}%
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="sin-datos">No hay datos de profesionales</p>
+        }
+      </div>
+    }
+
+    <!-- Reporte de Calificaciones (solo ADMINISTRADOR) -->
+    @if (puedeVerReporteCalificaciones()) {
+      <div class="reporte-card">
+        <h2>Calificaciones de Profesionales</h2>
+        @if (calificaciones() && calificaciones()!.length > 0) {
+          <div class="tabla-responsive">
+            <table class="tabla-reportes">
+              <thead>
+                <tr>
+                  <th>Profesional</th>
+                  <th>Calificación Promedio</th>
+                  <th>Cantidad Reseñas</th>
+                  <th>Mejor Servicio</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cal of calificaciones(); track cal.id) {
+                  <tr>
+                    <td>{{ cal.nombre }} {{ cal.apellidos }}</td>
+                    <td>
+                      <div class="rating">
+                        @for (i of [1, 2, 3, 4, 5]; track i) {
+                          <span class="star" [ngClass]="{ filled: i <= Math.ceil(cal.promedioCalificacion) }">
+                            ★
+                          </span>
+                        }
+                        <span class="rating-value">{{ cal.promedioCalificacion | number: '1.1-1' }}</span>
+                      </div>
+                    </td>
+                    <td>{{ cal.cantidadResenas }}</td>
+                    <td>{{ cal.mejorServicio || 'N/A' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="sin-datos">No hay datos de calificaciones</p>
+        }
+      </div>
+    }
+  }
+</div>

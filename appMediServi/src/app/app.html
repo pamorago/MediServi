@@ -8,13 +8,44 @@
       </div>
     </div>
     <nav class="menu">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Resumen</a>
+      @if (authService.autenticado()) {
+      <!-- Menú autenticado -->
+      <span class="menu-section">Hola, {{ authService.usuario()?.nombre }}</span>
+
+      <!-- Menú ADMINISTRADOR -->
+      @if (authService.esAdmin()) {
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
       <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
-      <a routerLink="/categorias" routerLinkActive="active">Categorias</a>
+      <a routerLink="/categorias" routerLinkActive="active">Categorías</a>
       <a routerLink="/especialidades" routerLinkActive="active">Especialidades</a>
-      <a routerLink="/profesionales" routerLinkActive="active">Profesionales</a>
-      <a routerLink="/servicios" routerLinkActive="active">Servicios</a>
       <a routerLink="/citas" routerLinkActive="active">Citas</a>
+      <a routerLink="/agenda" routerLinkActive="active">Agenda</a>
+      <a routerLink="/reportes" routerLinkActive="active">Reportes</a>
+      }
+
+      <!-- Menú PROFESIONAL -->
+      @if (authService.esProfesional()) {
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a routerLink="/servicios" routerLinkActive="active">Mis Servicios</a>
+      <a routerLink="/citas" routerLinkActive="active">Solicitudes</a>
+      <a routerLink="/agenda" routerLinkActive="active">Mi Agenda</a>
+      <a routerLink="/profesionales" routerLinkActive="active">Mi Perfil</a>
+      }
+
+      <!-- Menú CLIENTE -->
+      @if (authService.esCliente()) {
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a routerLink="/profesionales" routerLinkActive="active">Profesionales</a>
+      <a routerLink="/citas" routerLinkActive="active">Mis Citas</a>
+      <a routerLink="/agenda" routerLinkActive="active">Mi Agenda</a>
+      }
+
+      <button (click)="logout()" class="btn-logout">Cerrar Sesión</button>
+      } @else {
+      <!-- Menú no autenticado -->
+      <a routerLink="/login" routerLinkActive="active">Iniciar Sesión</a>
+      <a routerLink="/register" routerLinkActive="active">Registrarse</a>
+      }
     </nav>
   </header>
 

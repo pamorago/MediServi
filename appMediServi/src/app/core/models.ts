@@ -166,3 +166,47 @@ export interface ResenaPayload {
   puntuacion: number;
   comentario?: string;
 }
+
+// =================== AUTENTICACIÓN ===================
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data?: TokenData;
+}
+
+export interface TokenData {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  user: CurrentUser;
+}
+
+export interface CurrentUser {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  email: string;
+  rol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE';
+  estado: 'ACTIVO' | 'INACTIVO';
+  telefono?: string;
+}
+
+export interface AuthSession {
+  token: string;
+  user: CurrentUser;
+  expiresAt: number;
+}

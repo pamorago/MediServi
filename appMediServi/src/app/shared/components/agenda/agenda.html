@@ -1,0 +1,41 @@
+<div class="agenda-container">
+  <div class="agenda-header">
+    <h2>{{ titulo }}</h2>
+    @if (filtroOpciones && filtroOpciones.length > 0) {
+      <select
+        [(ngModel)]="filtroSeleccionado"
+        (change)="onFiltroChange()"
+        class="filtro-select"
+        aria-label="Filtrar citas por estado"
+      >
+        @for (opcion of filtroOpciones; track opcion) {
+          <option [value]="opcion">{{ opcion }}</option>
+        }
+      </select>
+    }
+  </div>
+
+  <full-calendar [options]="calendarOptions"></full-calendar>
+
+  @if (citaSeleccionada()) {
+    <div class="cita-detalle">
+      <h3>Detalles de la Cita</h3>
+      <div class="cita-info">
+        <p><strong>Fecha:</strong> {{ citaSeleccionada()?.fechaCita }}</p>
+        <p><strong>Hora:</strong> {{ citaSeleccionada()?.horaInicio }} - {{ citaSeleccionada()?.horaFin }}</p>
+        <p>
+          <strong>Estado:</strong>
+          <span [ngClass]="'estado-' + citaSeleccionada()?.estado">{{ citaSeleccionada()?.estado }}</span>
+        </p>
+        <p><strong>Modalidad:</strong> {{ citaSeleccionada()?.modalidad }}</p>
+      </div>
+      <button (click)="onSeleccionar(citaSeleccionada()!)" class="btn-seleccionar">
+        Seleccionar
+      </button>
+    </div>
+  }
+
+  @if (!isLoading && citas.length === 0) {
+    <p class="sin-datos">No hay citas para mostrar.</p>
+  }
+</div>
