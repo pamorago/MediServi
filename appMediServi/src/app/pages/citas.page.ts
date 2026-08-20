@@ -214,7 +214,14 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
         <div class="line">
           <strong>Estado</strong>
-          <span class="pill" [ngClass]="estadoCitaClass(cita.estado)">{{ cita.estado }}</span>
+          <span>
+            <span class="pill" [ngClass]="estadoCitaClass(cita.estado)">{{ cita.estado }}</span>
+            @if (esCitaCalificable(cita)) {
+            <span class="review-badge pending">Pendiente de calificar</span>
+            } @else if (esCitaCalificada(cita)) {
+            <span class="review-badge rated">Ya calificada</span>
+            }
+          </span>
         </div>
         <div class="line">
           <strong>Fecha</strong>
@@ -328,6 +335,19 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         color: #2a445f;
         background: #e3ecf8;
       }
+
+      .review-badge {
+        display: block;
+        width: fit-content;
+        margin-top: .35rem;
+        border-radius: 999px;
+        padding: .18rem .5rem;
+        font-size: .68rem;
+        font-weight: 700;
+      }
+
+      .review-badge.pending { color: #8a5b08; background: #fff1c7; }
+      .review-badge.rated { color: #176044; background: #dff3ec; }
 
       .detail-link {
         display: inline-block;
@@ -586,5 +606,18 @@ export class CitasPageComponent implements OnInit {
       default:
         return 'pendiente';
     }
+  }
+
+  esCitaDelCliente(cita: Cita): boolean {
+    const usuario = this.authService.usuario();
+    return this.authService.esCliente() && usuario?.id === cita.clienteId;
+  }
+
+  esCitaCalificable(cita: Cita): boolean {
+    return cita.estado === 'COMPLETADA' && this.esCitaDelCliente(cita) && !cita.resena;
+  }
+
+  esCitaCalificada(cita: Cita): boolean {
+    return cita.estado === 'COMPLETADA' && this.esCitaDelCliente(cita) && !!cita.resena;
   }
 }
