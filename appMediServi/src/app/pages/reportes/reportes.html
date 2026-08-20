@@ -22,6 +22,7 @@
           [min]="fechaInicio || undefined"
         />
       </div>
+      @if (puedeFiltrarPorProfesional) {
       <div class="filtro-field">
         <label for="profesionalFiltro">Profesional</label>
         <select id="profesionalFiltro" [(ngModel)]="profesionalId" (change)="cargarReportes()">
@@ -33,6 +34,7 @@
           }
         </select>
       </div>
+      }
       <div class="filtro-field">
         <label for="categoriaFiltro">Categoría</label>
         <select id="categoriaFiltro" [(ngModel)]="categoriaId" (change)="cargarReportes()">
@@ -64,7 +66,7 @@
   } @else {
     <!-- Reporte de Citas por Estado -->
     <div class="reporte-card">
-      <h2>Distribución de Citas por Estado</h2>
+      <h2>{{ tituloReporteEstado }}</h2>
       @if (citasPorEstado(); as reporte) {
         @if (reporte.total === 0) {
           <p class="sin-datos">No hay citas registradas para los filtros seleccionados.</p>

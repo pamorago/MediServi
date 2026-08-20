@@ -3,6 +3,7 @@ import { DecimalPipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/services/auth.service';
 import { Especialidad, Profesional, ProfesionalPayload } from '../core/models';
 import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
 
@@ -16,8 +17,34 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
         <span class="module-id">MOD-PRO</span>
         <h2>Profesionales</h2>
       </div>
-      <p>Gestión de profesionales con filtros, formulario de registro/edición y cambio de disponibilidad.</p>
+      <p>{{ descripcionModulo }}</p>
 
+      <div class="tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="pestana === 'listar'"
+          (click)="pestana = 'listar'"
+        >
+          Listar
+        </button>
+        @if (puedeRegistrar) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="pestana === 'registrar'"
+          (click)="irARegistrar()"
+        >
+          Registrar
+        </button>
+        }
+      </div>
+    </section>
+
+    @if (pestana === 'listar') {
+    <section class="card" style="margin-top:1rem">
       <div class="summary">
         <span>Total: {{ profesionales.length }}</span>
         <span>Disponibles: {{ contarPorDisponibilidad(true) }}</span>
@@ -99,10 +126,12 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
                   </span>
                 </td>
                 <td class="actions">
+                  @if (puedeGestionar(p)) {
                   <button class="btn-sm" (click)="editar(p)">Editar</button>
                   <button class="btn-sm btn-warn" (click)="toggleDisponibilidad(p)">
                     {{ p.disponible ? 'Desactivar' : 'Activar' }}
                   </button>
+                  }
                   <a class="detail-link" [routerLink]="['/profesionales', p.id]">Ver detalle</a>
                 </td>
               </tr>
@@ -118,7 +147,9 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
       }
       }
     </section>
+    }
 
+    @if (pestana === 'registrar' && puedeRegistrar) {
     <section class="card" style="margin-top:1rem">
       <div class="module-head">
         <span class="module-id">FORM-PRO</span>
@@ -310,8 +341,31 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
         </div>
       </form>
     </section>
+    }
   `,
   styles: [`
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.85rem;
+    }
+    .tab {
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--color-outline);
+      background: transparent;
+      color: var(--color-text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab:hover { background: var(--color-soft); }
+    .tab.active {
+      color: #224a40;
+      border-color: transparent;
+      background: linear-gradient(145deg, #dcefe8, #cfe4dc);
+    }
     .summary { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.65rem; }
     .summary span {
       border:1px solid var(--color-outline); border-radius:999px;
@@ -369,6 +423,12 @@ export class ProfesionalesPageComponent implements OnInit {
   @ViewChild('formPro') formPro!: NgForm;
   readonly api = inject(ApiService);
   private readonly apiSvc = inject(ApiService);
+  private readonly authService = inject(AuthService);
+
+  /** Tab de "mantenimiento": Listar (por defecto) / Registrar. */
+  pestana: 'listar' | 'registrar' = 'listar';
+  /** Sub-vista dentro de Listar: tabla o mapa. */
+  vista: 'tabla' | 'mapa' = 'tabla';
 
   todosProfesionales: Profesional[] = [];
   profesionales: Profesional[] = [];
@@ -383,7 +443,6 @@ export class ProfesionalesPageComponent implements OnInit {
   search = '';
   modalidadFiltro = '';
   disponibleFiltro = '';
-  vista: 'tabla' | 'mapa' = 'tabla';
 
   editandoId: number | null = null;
   especialidadSeleccionada: number | null = null;
@@ -393,9 +452,39 @@ export class ProfesionalesPageComponent implements OnInit {
 
   form: ProfesionalPayload = this.formVacio();
 
+  /**
+   * Solo el ADMINISTRADOR puede registrar nuevos profesionales (así se
+   * crea la cuenta de usuario del profesional). CLIENTE y PROFESIONAL
+   * no ven esa pestaña.
+   */
+  get puedeRegistrar(): boolean {
+    return this.authService.esAdmin();
+  }
+
+  get descripcionModulo(): string {
+    if (this.authService.esAdmin()) return 'Gestión de profesionales: filtros, registro y edición de perfiles.';
+    if (this.authService.esProfesional()) return 'Directorio de profesionales. Podés editar únicamente tu propio perfil.';
+    return 'Directorio de profesionales disponibles para agendar una cita.';
+  }
+
   ngOnInit(): void {
     this.apiSvc.getEspecialidades().subscribe((data: Especialidad[]) => (this.especialidades = data));
     this.cargarProfesionales();
+  }
+
+  /** Un profesional solo puede editar/activar-desactivar su propio perfil; el administrador, cualquiera. */
+  puedeGestionar(p: Profesional): boolean {
+    if (this.authService.esAdmin()) return true;
+    if (this.authService.esProfesional()) {
+      const usuario = this.authService.usuario();
+      return !!usuario && p.usuario.id === usuario.id;
+    }
+    return false;
+  }
+
+  irARegistrar(): void {
+    this.editandoId = null;
+    this.pestana = 'registrar';
   }
 
   cargarProfesionales(): void {
@@ -467,6 +556,7 @@ export class ProfesionalesPageComponent implements OnInit {
   }
 
   editar(p: Profesional): void {
+    if (!this.puedeGestionar(p)) return;
     this.editandoId = p.id;
     this.imagenPreview = null;
     this.imagenFile = null;
@@ -491,6 +581,9 @@ export class ProfesionalesPageComponent implements OnInit {
     this.especialidadesSeleccionadas =
       p.especialidades?.map((e) => ({ id: e.especialidadId, nombre: e.especialidad.nombre })) ?? [];
     this.form.especialidadIds = this.especialidadesSeleccionadas.map((e) => e.id);
+    // Un profesional editando su propio perfil ve el formulario aunque no
+    // tenga acceso a la pestaña "Registrar" (esa sigue oculta para él).
+    this.pestana = 'registrar';
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
 
@@ -501,6 +594,19 @@ export class ProfesionalesPageComponent implements OnInit {
     if (this.formPro?.invalid) {
       this.formError = 'Completá todos los campos requeridos antes de guardar.';
       return;
+    }
+
+    if (!this.puedeRegistrar && !this.editandoId) {
+      this.formError = 'No tenés permiso para registrar profesionales.';
+      return;
+    }
+
+    if (this.editandoId) {
+      const original = this.todosProfesionales.find((p) => p.id === this.editandoId);
+      if (original && !this.puedeGestionar(original)) {
+        this.formError = 'No tenés permiso para editar este perfil.';
+        return;
+      }
     }
 
     if (this.form.tarifaBase <= 0) {
@@ -548,6 +654,7 @@ export class ProfesionalesPageComponent implements OnInit {
         this.limpiarFormulario();
         this.cargarProfesionales();
         this.guardando = false;
+        this.pestana = 'listar';
       },
       error: () => {
         this.formError = 'No fue posible guardar el profesional. Verifique los datos.';
@@ -557,6 +664,7 @@ export class ProfesionalesPageComponent implements OnInit {
   }
 
   toggleDisponibilidad(p: Profesional): void {
+    if (!this.puedeGestionar(p)) return;
     const siguiente = !p.disponible;
     if (!confirm(`¿Confirma marcar a ${p.usuario.nombre} como ${siguiente ? 'disponible' : 'no disponible'}?`)) return;
 

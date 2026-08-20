@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/services/auth.service';
 import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from '../core/models';
 
 @Component({
@@ -14,8 +15,34 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         <span class="module-id">MOD-SER</span>
         <h2>Servicios</h2>
       </div>
-      <p>Administracion de servicios con filtros por categoria, modalidad y rango de precio.</p>
+      <p>{{ descripcionModulo }}</p>
 
+      <div class="tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="vista === 'listar'"
+          (click)="vista = 'listar'"
+        >
+          Listar
+        </button>
+        @if (puedeRegistrar) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="vista === 'registrar'"
+          (click)="irARegistrar()"
+        >
+          Registrar
+        </button>
+        }
+      </div>
+    </section>
+
+    @if (vista === 'listar') {
+    <section class="card" style="margin-top: 1rem">
       <div class="summary">
         <span>Total: {{ servicios.length }}</span>
         <span>Activos: {{ contarPorEstado('ACTIVO') }}</span>
@@ -90,8 +117,10 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
                 }
               </td>
               <td class="actions">
+                @if (puedeGestionar(servicio)) {
                 <button (click)="editar(servicio)">Editar</button>
                 <button (click)="toggleEstado(servicio)">{{ servicio.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
+                }
                 <a class="detail-link" [routerLink]="['/servicios', servicio.id]">Detalle</a>
               </td>
             </tr>
@@ -107,8 +136,13 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
       @if (error) {
       <p class="status error">{{ error }}</p>
       }
+      @if (!loading && !error && servicios.length === 0) {
+      <p class="status">No hay servicios para mostrar con los filtros seleccionados.</p>
+      }
     </section>
+    }
 
+    @if (vista === 'registrar' && puedeRegistrar) {
     <section class="card" style="margin-top: 1rem">
       <div class="module-head">
         <span class="module-id">FORM-SER</span>
@@ -116,6 +150,7 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
       </div>
       <form (ngSubmit)="guardar(formSer)" #formSer="ngForm" class="form-grid" novalidate>
 
+        @if (esAdministrador) {
         <div class="field">
           <label>Profesional *</label>
           <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profSer="ngModel">
@@ -128,6 +163,13 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
           <span class="field-error">El profesional es obligatorio.</span>
           }
         </div>
+        } @else {
+        <div class="field">
+          <label>Profesional</label>
+          <input [value]="nombreUsuarioActual" type="text" disabled />
+          <span class="field-hint">Estás registrando este servicio a tu propio perfil.</span>
+        </div>
+        }
 
         <div class="field">
           <label>Categoría *</label>
@@ -233,10 +275,38 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         }
       </form>
     </section>
-  
+    }
   `,
   styles: [
     `
+      .tabs {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 0.85rem;
+      }
+
+      .tab {
+        padding: 0.45rem 1rem;
+        border-radius: 999px;
+        border: 1px solid var(--color-outline);
+        background: transparent;
+        color: var(--color-text);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab:hover {
+        background: var(--color-soft);
+      }
+
+      .tab.active {
+        color: #224a40;
+        border-color: transparent;
+        background: linear-gradient(145deg, #dcefe8, #cfe4dc);
+      }
+
       .summary {
         display: flex;
         flex-wrap: wrap;
@@ -304,6 +374,7 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
       .field { display:flex; flex-direction:column; gap:.3rem; }
       .field label { font-size:.82rem; font-weight:600; color:var(--color-text); }
       .field-error { font-size:.78rem; color:#c0392b; margin-top:.1rem; }
+      .field-hint { font-size:.78rem; color:var(--color-subtle); margin-top:.1rem; }
       .inline-add { display:flex; gap:.5rem; align-items:center; }
       .inline-add select { flex:1; }
       .status-box {
@@ -316,6 +387,9 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
 })
 export class ServiciosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly authService = inject(AuthService);
+
+  vista: 'listar' | 'registrar' = 'listar';
 
   todosServicios: Servicio[] = [];
   servicios: Servicio[] = [];
@@ -340,6 +414,9 @@ export class ServiciosPageComponent implements OnInit {
   especialidadSeleccionada: number | null = null;
   especialidadesSeleccionadas: { id: number; nombre: string }[] = [];
 
+  /** perfilProfesionalId propio, resuelto una vez cargada la lista de profesionales (solo rol PROFESIONAL) */
+  private miPerfilProfesionalId: number | null = null;
+
   form: ServicioPayload = {
     perfilProfesionalId: 0,
     categoriaId: 0,
@@ -352,11 +429,59 @@ export class ServiciosPageComponent implements OnInit {
     especialidadIds: [],
   };
 
+  get esAdministrador(): boolean {
+    return this.authService.esAdmin();
+  }
+
+  /**
+   * Solo un PROFESIONAL puede registrar (y editar) sus propios servicios.
+   * El ADMINISTRADOR solo consulta el catálogo (spec: "Consultar servicios"),
+   * y el CLIENTE solo navega el catálogo.
+   */
+  get puedeRegistrar(): boolean {
+    return this.authService.esProfesional();
+  }
+
+  get nombreUsuarioActual(): string {
+    const usuario = this.authService.usuario();
+    return usuario ? `${usuario.nombre} ${usuario.apellidos}` : '';
+  }
+
+  get descripcionModulo(): string {
+    if (this.esAdministrador) return 'Catálogo global de servicios ofrecidos por todos los profesionales.';
+    if (this.authService.esProfesional()) return 'Administrá los servicios que ofrecés a tus clientes.';
+    return 'Catálogo de servicios disponibles para agendar.';
+  }
+
   ngOnInit(): void {
     this.api.getCategorias().subscribe((data) => (this.categorias = data));
     this.api.getEspecialidades().subscribe((data) => (this.especialidades = data));
-    this.api.getProfesionales().subscribe((data) => (this.profesionales = data));
+
+    const usuario = this.authService.usuario();
+    this.api.getProfesionales().subscribe((data) => {
+      this.profesionales = data;
+      if (usuario && this.authService.esProfesional()) {
+        this.miPerfilProfesionalId = data.find((p) => p.usuario.id === usuario.id)?.id ?? null;
+        this.form.perfilProfesionalId = this.miPerfilProfesionalId ?? 0;
+      }
+    });
+
     this.cargarServicios();
+  }
+
+  /** Solo el profesional dueño del servicio (o el administrador, para desactivar en casos excepcionales) puede editarlo/darlo de baja. */
+  puedeGestionar(servicio: Servicio): boolean {
+    if (this.authService.esProfesional()) {
+      return this.miPerfilProfesionalId !== null && servicio.perfilProfesionalId === this.miPerfilProfesionalId;
+    }
+    return false;
+  }
+
+  irARegistrar(): void {
+    if (this.authService.esProfesional() && !this.editandoId) {
+      this.form.perfilProfesionalId = this.miPerfilProfesionalId ?? 0;
+    }
+    this.vista = 'registrar';
   }
 
   cargarServicios(): void {
@@ -380,8 +505,12 @@ export class ServiciosPageComponent implements OnInit {
     const search = this.search.trim().toLowerCase();
     const precioMin = this.precioMin ? Number(this.precioMin) : null;
     const precioMax = this.precioMax ? Number(this.precioMax) : null;
+    const esProfesional = this.authService.esProfesional();
 
     this.servicios = this.todosServicios.filter((servicio) => {
+      // Un profesional solo ve (y por lo tanto solo puede filtrar/gestionar) sus propios servicios.
+      const matchPropio = !esProfesional || servicio.perfilProfesionalId === this.miPerfilProfesionalId;
+
       const precio = Number(servicio.precio);
 
       const matchSearch = !search || servicio.nombre.toLowerCase().includes(search);
@@ -392,7 +521,16 @@ export class ServiciosPageComponent implements OnInit {
       const matchPrecioMin = precioMin === null || precio >= precioMin;
       const matchPrecioMax = precioMax === null || precio <= precioMax;
 
-      return matchSearch && matchServicio && matchCategoria && matchModalidad && matchEstado && matchPrecioMin && matchPrecioMax;
+      return (
+        matchPropio &&
+        matchSearch &&
+        matchServicio &&
+        matchCategoria &&
+        matchModalidad &&
+        matchEstado &&
+        matchPrecioMin &&
+        matchPrecioMax
+      );
     });
   }
 
@@ -430,7 +568,9 @@ export class ServiciosPageComponent implements OnInit {
   }
 
   editar(servicio: Servicio): void {
+    if (!this.puedeGestionar(servicio)) return;
     this.editandoId = servicio.id;
+    this.vista = 'registrar';
     this.api.getServicioById(servicio.id).subscribe((detalle) => {
       const especialidadIds =
         (detalle as unknown as { especialidades?: Array<{ especialidadId: number; especialidad: { nombre: string } }> })
@@ -459,6 +599,24 @@ export class ServiciosPageComponent implements OnInit {
     if (formRef?.invalid) {
       this.formError = 'Completá todos los campos requeridos antes de guardar.';
       return;
+    }
+
+    // Un profesional siempre registra/edita a nombre de su propio perfil,
+    // sin importar lo que quede en el formulario.
+    if (this.authService.esProfesional()) {
+      if (!this.miPerfilProfesionalId) {
+        this.formError = 'No se pudo determinar tu perfil profesional.';
+        return;
+      }
+      this.form.perfilProfesionalId = this.miPerfilProfesionalId;
+    }
+
+    if (this.editandoId) {
+      const original = this.todosServicios.find((s) => s.id === this.editandoId);
+      if (original && !this.puedeGestionar(original)) {
+        this.formError = 'No tenés permiso para editar este servicio.';
+        return;
+      }
     }
 
     if (!this.form.perfilProfesionalId || !this.form.categoriaId) {
@@ -493,6 +651,7 @@ export class ServiciosPageComponent implements OnInit {
         this.limpiarFormulario();
         this.cargarServicios();
         this.guardando = false;
+        this.vista = 'listar';
       },
       error: () => {
         this.formError = 'No fue posible guardar el servicio. Verifique los datos.';
@@ -502,6 +661,7 @@ export class ServiciosPageComponent implements OnInit {
   }
 
   toggleEstado(servicio: Servicio): void {
+    if (!this.puedeGestionar(servicio)) return;
     const siguiente = servicio.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
     if (!confirm('Confirma cambiar el estado de "' + servicio.nombre + '" a ' + siguiente + '?')) return;
 
@@ -521,7 +681,7 @@ export class ServiciosPageComponent implements OnInit {
     this.especialidadesSeleccionadas = [];
     this.especialidadSeleccionada = null;
     this.form = {
-      perfilProfesionalId: 0,
+      perfilProfesionalId: this.authService.esProfesional() ? (this.miPerfilProfesionalId ?? 0) : 0,
       categoriaId: 0,
       nombre: '',
       descripcion: '',

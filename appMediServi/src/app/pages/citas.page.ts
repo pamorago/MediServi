@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/services/auth.service';
 import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/models';
 
 @Component({
@@ -10,7 +11,39 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
   standalone: true,
   imports: [CommonModule, DatePipe, CurrencyPipe, FormsModule, RouterLink],
   template: `
-    <section class="card form-banner" style="margin-bottom: 1rem">
+    <section class="card">
+      <div class="module-head">
+        <span class="module-id">MOD-CIT</span>
+        <h2>Citas</h2>
+      </div>
+      <p>Agenda clinica activa con estado de consulta, modalidad de atencion y monto estimado.</p>
+
+      <div class="tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="vista === 'listar'"
+          (click)="vista = 'listar'"
+        >
+          Listar
+        </button>
+        @if (puedeRegistrar) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="vista === 'registrar'"
+          (click)="vista = 'registrar'"
+        >
+          Registrar
+        </button>
+        }
+      </div>
+    </section>
+
+    @if (vista === 'registrar' && puedeRegistrar) {
+    <section class="card form-banner" style="margin-top: 1rem">
       <div class="module-head">
         <span class="module-id">FORM-CIT</span>
         <h3>Registrar cita</h3>
@@ -18,16 +51,9 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
       <form (ngSubmit)="crearCita(formCit)" #formCit="ngForm" class="form-grid" novalidate>
 
         <div class="field">
-          <label>Cliente *</label>
-          <select [(ngModel)]="form.clienteId" name="clienteId" required #clienteCit="ngModel">
-            <option [ngValue]="0">— Seleccione cliente —</option>
-            @for (cliente of clientes; track cliente.id) {
-            <option [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
-            }
-          </select>
-          @if (clienteCit.invalid && clienteCit.touched) {
-          <span class="field-error">El cliente es obligatorio.</span>
-          }
+          <label>Cliente</label>
+          <input [value]="nombreUsuarioActual" type="text" disabled />
+          <span class="field-hint">Solicitás la cita a tu propio nombre.</span>
         </div>
 
         <div class="field">
@@ -124,13 +150,15 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
         </div>
       </form>
     </section>
+    }
 
-    <section class="card module-banner cit-banner">
+    @if (vista === 'listar') {
+    <section class="card module-banner cit-banner" style="margin-top: 1rem">
       <div class="module-head">
-        <span class="module-id">MOD-CIT</span>
-        <h2>Citas registradas</h2>
+        <span class="module-id">LIST-CIT</span>
+        <h2>{{ tituloListado }}</h2>
       </div>
-      <p>Agenda clinica activa con estado de consulta, modalidad de atencion y monto estimado.</p>
+      <p>{{ descripcionListado }}</p>
 
       <div class="toolbar">
         <select [(ngModel)]="estadoFiltro">
@@ -141,6 +169,7 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
           <option value="CANCELADA">Cancelada</option>
           <option value="COMPLETADA">Completada</option>
         </select>
+        @if (esAdministrador) {
         <select [(ngModel)]="profesionalFiltro">
           <option value="">Todos los profesionales</option>
           @for (profesional of profesionales; track profesional.id) {
@@ -149,6 +178,7 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
           </option>
           }
         </select>
+        }
         <input [(ngModel)]="fechaInicioFiltro" type="date" />
         <input [(ngModel)]="fechaFinFiltro" type="date" />
         <button class="primary" (click)="cargarCitas()">Aplicar filtros</button>
@@ -163,6 +193,9 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
     }
 
     @if (!loading && !error) {
+    @if (citas.length === 0) {
+    <p class="status">No hay citas para mostrar con los filtros seleccionados.</p>
+    }
     <section class="grid cards">
       @for (cita of citas; track cita.id) {
       <article class="card">
@@ -204,9 +237,38 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
       }
     </section>
     }
+    }
   `,
   styles: [
     `
+      .tabs {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 0.85rem;
+      }
+
+      .tab {
+        padding: 0.45rem 1rem;
+        border-radius: 999px;
+        border: 1px solid var(--color-outline);
+        background: transparent;
+        color: var(--color-text);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab:hover {
+        background: var(--color-soft);
+      }
+
+      .tab.active {
+        color: #224a40;
+        border-color: transparent;
+        background: linear-gradient(145deg, #dcefe8, #cfe4dc);
+      }
+
       .cards {
         margin-top: 1rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -290,6 +352,9 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
 })
 export class CitasPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly authService = inject(AuthService);
+
+  vista: 'listar' | 'registrar' = 'listar';
 
   citas: Cita[] = [];
   clientes: Usuario[] = [];
@@ -308,6 +373,9 @@ export class CitasPageComponent implements OnInit {
   fechaInicioFiltro = '';
   fechaFinFiltro = '';
 
+  /** perfilProfesionalId propio, resuelto una vez cargada la lista de profesionales (solo rol PROFESIONAL) */
+  private miPerfilProfesionalId: number | null = null;
+
   form: CitaPayload = {
     clienteId: 0,
     perfilProfesionalId: 0,
@@ -317,6 +385,36 @@ export class CitasPageComponent implements OnInit {
     modalidad: 'MIXTA',
     comentarioCliente: '',
   };
+
+  get esAdministrador(): boolean {
+    return this.authService.esAdmin();
+  }
+
+  /**
+   * Solo el CLIENTE puede registrar una cita (a su propio nombre). El
+   * administrador no debe crear citas como cliente y el profesional
+   * gestiona solicitudes, no las crea.
+   */
+  get puedeRegistrar(): boolean {
+    return this.authService.esCliente();
+  }
+
+  get nombreUsuarioActual(): string {
+    const usuario = this.authService.usuario();
+    return usuario ? `${usuario.nombre} ${usuario.apellidos}` : '';
+  }
+
+  get tituloListado(): string {
+    if (this.esAdministrador) return 'Todas las citas';
+    if (this.authService.esProfesional()) return 'Solicitudes recibidas';
+    return 'Mis citas';
+  }
+
+  get descripcionListado(): string {
+    if (this.esAdministrador) return 'Vista global de citas de todos los clientes y profesionales.';
+    if (this.authService.esProfesional()) return 'Citas asignadas a tu perfil profesional.';
+    return 'Tu historial de citas solicitadas.';
+  }
 
   get montoEstimadoCalculado(): string {
     const servicio = this.serviciosFiltrados.find((s) => s.id === Number(this.form.servicioId))
@@ -343,19 +441,29 @@ export class CitasPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.generarHoras();
-    this.api.getUsuarios({ rol: 'CLIENTE', estado: 'ACTIVO' }).subscribe((data) => {
-      this.clientes = data;
-    });
+
+    const usuario = this.authService.usuario();
+    if (usuario && this.authService.esCliente()) {
+      this.form.clienteId = usuario.id;
+    }
+
+    if (this.esAdministrador) {
+      this.api.getUsuarios({ rol: 'CLIENTE', estado: 'ACTIVO' }).subscribe((data) => {
+        this.clientes = data;
+      });
+    }
 
     this.api.getProfesionales({ disponible: 'true' }).subscribe((data) => {
       this.profesionales = data;
+      if (usuario && this.authService.esProfesional()) {
+        this.miPerfilProfesionalId = data.find((p) => p.usuario.id === usuario.id)?.id ?? null;
+      }
+      this.cargarCitas();
     });
 
     this.api.getServicios({ estado: 'ACTIVO' }).subscribe((data) => {
       this.servicios = data;
     });
-
-    this.cargarCitas();
   }
 
   generarHoras(): void {
@@ -379,13 +487,28 @@ export class CitasPageComponent implements OnInit {
     this.loading = true;
     const params: Record<string, string> = {};
     if (this.estadoFiltro) params['estado'] = this.estadoFiltro;
-    if (this.profesionalFiltro) params['perfilProfesionalId'] = this.profesionalFiltro;
     if (this.fechaInicioFiltro) params['fechaInicio'] = this.fechaInicioFiltro;
     if (this.fechaFinFiltro) params['fechaFin'] = this.fechaFinFiltro;
 
+    if (this.esAdministrador) {
+      if (this.profesionalFiltro) params['perfilProfesionalId'] = this.profesionalFiltro;
+    } else if (this.authService.esProfesional()) {
+      // El profesional solo puede ver sus propias citas.
+      if (this.miPerfilProfesionalId) {
+        params['perfilProfesionalId'] = String(this.miPerfilProfesionalId);
+      } else {
+        // Aún no se resolvió su perfil: no mostramos nada en vez de exponer todo.
+        this.citas = [];
+        this.loading = false;
+        return;
+      }
+    }
+    // El API no expone un filtro por clienteId, así que a un CLIENTE se le
+    // restringe la lista después de recibirla (ver filtrarPorRol).
+
     this.api.getCitasFiltradas(params).subscribe({
       next: (data) => {
-        this.citas = data;
+        this.citas = this.filtrarPorRol(data);
         this.loading = false;
       },
       error: () => {
@@ -393,6 +516,13 @@ export class CitasPageComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  private filtrarPorRol(citas: Cita[]): Cita[] {
+    if (!this.authService.esCliente()) return citas;
+    const usuario = this.authService.usuario();
+    if (!usuario) return [];
+    return citas.filter((c) => c.clienteId === usuario.id || c.cliente?.id === usuario.id);
   }
 
   crearCita(formRef?: NgForm): void {
@@ -404,10 +534,16 @@ export class CitasPageComponent implements OnInit {
       return;
     }
 
+    const usuario = this.authService.usuario();
+    if (!usuario) {
+      this.errorCita = 'Tu sesión no es válida, volvé a iniciar sesión.';
+      return;
+    }
+
     this.guardandoCita = true;
     const payload: CitaPayload = {
       ...this.form,
-      clienteId: Number(this.form.clienteId),
+      clienteId: usuario.id,
       perfilProfesionalId: Number(this.form.perfilProfesionalId),
       servicioId: Number(this.form.servicioId),
     };
@@ -417,7 +553,7 @@ export class CitasPageComponent implements OnInit {
         this.exitoCita = 'Cita registrada correctamente.';
         this.guardandoCita = false;
         this.form = {
-          clienteId: 0,
+          clienteId: usuario.id,
           perfilProfesionalId: 0,
           servicioId: 0,
           fechaCita: '',
@@ -427,6 +563,7 @@ export class CitasPageComponent implements OnInit {
         };
         this.serviciosFiltrados = [];
         setTimeout(() => formRef?.resetForm());
+        this.vista = 'listar';
         this.cargarCitas();
       },
       error: () => {

@@ -49,7 +49,7 @@ export const routes: Routes = [
 	{
 		path: 'reportes',
 		component: Reportes,
-		canActivate: [RoleGuard(['ADMINISTRADOR'])],
+		canActivate: [RoleGuard(['ADMINISTRADOR', 'PROFESIONAL'])],
 	},
 
 	// Rutas de CLIENTE y PROFESIONAL

@@ -64,6 +64,9 @@ export class Reportes implements OnInit {
     profesionalId: number | null = null;
     categoriaId: number | null = null;
 
+    /** perfilProfesionalId propio, resuelto una vez cargada la lista de profesionales (solo rol PROFESIONAL). */
+    private miPerfilProfesionalId: number | null = null;
+
     chartCitasEstado: ChartOptions = {
         series: [],
         labels: ['Pendiente', 'Aceptada', 'Rechazada', 'Cancelada', 'Completada'],
@@ -95,15 +98,27 @@ export class Reportes implements OnInit {
     ) { }
 
     ngOnInit(): void {
+        const usuario = this.authService.usuario();
+
         this.api.getProfesionales().subscribe({
-            next: (data) => (this.profesionales = data),
-            error: () => { },
+            next: (data) => {
+                this.profesionales = data;
+                if (usuario && this.authService.esProfesional()) {
+                    this.miPerfilProfesionalId = data.find((p) => p.usuario.id === usuario.id)?.id ?? null;
+                    // El profesional solo puede ver su propio reporte: el filtro
+                    // queda bloqueado a su propio perfil.
+                    this.profesionalId = this.miPerfilProfesionalId;
+                }
+                this.cargarReportes();
+            },
+            error: () => {
+                this.cargarReportes();
+            },
         });
         this.api.getCategorias().subscribe({
             next: (data) => (this.categorias = data),
             error: () => { },
         });
-        this.cargarReportes();
     }
 
     rangoFechaInvalido(): boolean {
@@ -191,7 +206,9 @@ export class Reportes implements OnInit {
     limpiarFiltros(): void {
         this.fechaInicio = '';
         this.fechaFin = '';
-        this.profesionalId = null;
+        // Un profesional no puede limpiar el filtro de "Profesional": su
+        // reporte siempre queda restringido a su propio perfil.
+        this.profesionalId = this.esProfesional ? this.miPerfilProfesionalId : null;
         this.categoriaId = null;
         this.cargarReportes();
     }
@@ -202,5 +219,18 @@ export class Reportes implements OnInit {
 
     puedeVerReporteCalificaciones(): boolean {
         return this.authService.hasRole('ADMINISTRADOR');
+    }
+
+    get esProfesional(): boolean {
+        return this.authService.esProfesional();
+    }
+
+    /** El selector de "Profesional" solo tiene sentido para el administrador; el profesional ve siempre su propio reporte. */
+    get puedeFiltrarPorProfesional(): boolean {
+        return this.authService.hasRole('ADMINISTRADOR');
+    }
+
+    get tituloReporteEstado(): string {
+        return this.esProfesional ? 'Mi reporte de citas' : 'Distribución de Citas por Estado';
     }
 }
