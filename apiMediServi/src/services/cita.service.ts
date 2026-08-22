@@ -293,32 +293,43 @@ const cambiarEstadoCita = async (id: number, data: CambiarEstadoCitaDTO) => {
     throw crearError("No se permiten cambios desde estados finales", StatusCodes.BAD_REQUEST);
   }
 
+  // El administrador puede realizar, en nombre del sistema, cualquier
+  // transicion que normalmente correspondria al cliente o al profesional
+  // (por ejemplo para resolver una disputa o corregir un error operativo).
+  // Sigue sujeto a la misma matriz de estados y a los mismos requisitos
+  // de motivo que el resto de los actores.
+  const esAdministrador = data.actorRol === "ADMINISTRADOR";
+
   if (estadoActual === "PENDIENTE" && estadoNuevo === "ACEPTADA") {
-    if (data.actorRol !== "PROFESIONAL" || actor.id !== cita.profesional.usuarioId) {
+    const autorizado = esAdministrador || (data.actorRol === "PROFESIONAL" && actor.id === cita.profesional.usuarioId);
+    if (!autorizado) {
       throw crearError("Solo el profesional asignado puede aceptar la cita", StatusCodes.FORBIDDEN);
     }
   } else if (estadoActual === "PENDIENTE" && estadoNuevo === "RECHAZADA") {
-    if (data.actorRol !== "PROFESIONAL" || actor.id !== cita.profesional.usuarioId) {
+    const autorizado = esAdministrador || (data.actorRol === "PROFESIONAL" && actor.id === cita.profesional.usuarioId);
+    if (!autorizado) {
       throw crearError("Solo el profesional asignado puede rechazar la cita", StatusCodes.FORBIDDEN);
     }
     if (!data.motivo?.trim()) {
       throw crearError("Debe indicar un motivo al rechazar la cita", StatusCodes.BAD_REQUEST);
     }
   } else if (estadoActual === "PENDIENTE" && estadoNuevo === "CANCELADA") {
-    if (data.actorRol !== "CLIENTE" || actor.id !== cita.clienteId) {
+    const autorizado = esAdministrador || (data.actorRol === "CLIENTE" && actor.id === cita.clienteId);
+    if (!autorizado) {
       throw crearError("Solo el cliente propietario puede cancelar una cita pendiente", StatusCodes.FORBIDDEN);
     }
   } else if (estadoActual === "ACEPTADA" && estadoNuevo === "CANCELADA") {
     const esClientePropietario = data.actorRol === "CLIENTE" && actor.id === cita.clienteId;
     const esProfesionalAsignado = data.actorRol === "PROFESIONAL" && actor.id === cita.profesional.usuarioId;
-    if (!esClientePropietario && !esProfesionalAsignado) {
+    if (!esAdministrador && !esClientePropietario && !esProfesionalAsignado) {
       throw crearError("Solo el cliente o profesional asignado pueden cancelar la cita", StatusCodes.FORBIDDEN);
     }
     if (!data.motivo?.trim()) {
       throw crearError("Debe indicar un motivo al cancelar una cita aceptada", StatusCodes.BAD_REQUEST);
     }
   } else if (estadoActual === "ACEPTADA" && estadoNuevo === "COMPLETADA") {
-    if (data.actorRol !== "PROFESIONAL" || actor.id !== cita.profesional.usuarioId) {
+    const autorizado = esAdministrador || (data.actorRol === "PROFESIONAL" && actor.id === cita.profesional.usuarioId);
+    if (!autorizado) {
       throw crearError("Solo el profesional asignado puede completar la cita", StatusCodes.FORBIDDEN);
     }
 

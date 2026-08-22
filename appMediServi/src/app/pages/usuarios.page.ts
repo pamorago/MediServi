@@ -78,6 +78,15 @@ import { Usuario } from '../core/models';
                 <button (click)="toggleEstado(usuario)">
                   {{ usuario.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
                 </button>
+                <select
+                  class="rol-select"
+                  [ngModel]="usuario.rol"
+                  (ngModelChange)="cambiarRol(usuario, $event)"
+                >
+                  <option value="ADMINISTRADOR">Administrador</option>
+                  <option value="PROFESIONAL">Profesional</option>
+                  <option value="CLIENTE">Cliente</option>
+                </select>
               </td>
             </tr>
             }
@@ -122,6 +131,18 @@ import { Usuario } from '../core/models';
       .pill.role {
         color: #234f45;
         background: #edf7f3;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: center;
+      }
+
+      .rol-select {
+        font-size: 0.82rem;
+        padding: 0.2rem 0.4rem;
       }
     `,
   ],
@@ -195,6 +216,25 @@ export class UsuariosPageComponent implements OnInit {
       next: () => this.cargarUsuarios(),
       error: () => {
         this.error = 'No fue posible actualizar el estado del usuario.';
+      },
+    });
+  }
+
+  cambiarRol(usuario: Usuario, nuevoRol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE'): void {
+    if (nuevoRol === usuario.rol) {
+      return;
+    }
+
+    if (!confirm(`Confirma cambiar el rol de ${usuario.nombre} ${usuario.apellidos} a ${nuevoRol}?`)) {
+      this.cargarUsuarios();
+      return;
+    }
+
+    this.api.cambiarRolUsuario(usuario.id, nuevoRol).subscribe({
+      next: () => this.cargarUsuarios(),
+      error: (err) => {
+        this.error = err?.error?.error ?? 'No fue posible actualizar el rol del usuario.';
+        this.cargarUsuarios();
       },
     });
   }

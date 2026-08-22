@@ -50,11 +50,26 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
       </div>
       <form (ngSubmit)="crearCita(formCit)" #formCit="ngForm" class="form-grid" novalidate>
 
+        @if (esAdministrador) {
+        <div class="field">
+          <label>Cliente *</label>
+          <select [(ngModel)]="form.clienteId" name="clienteId" required #cliCit="ngModel">
+            <option [ngValue]="0">— Seleccione cliente —</option>
+            @for (cliente of clientes; track cliente.id) {
+            <option [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+            }
+          </select>
+          @if (cliCit.invalid && cliCit.touched) {
+          <span class="field-error">El cliente es obligatorio.</span>
+          }
+        </div>
+        } @else {
         <div class="field">
           <label>Cliente</label>
           <input [value]="nombreUsuarioActual" type="text" disabled />
           <span class="field-hint">Solicitás la cita a tu propio nombre.</span>
         </div>
+        }
 
         <div class="field">
           <label>Profesional *</label>
@@ -73,7 +88,7 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
 
         <div class="field">
           <label>Servicio *</label>
-          <select [(ngModel)]="form.servicioId" name="servicioId" required #svcCit="ngModel">
+          <select [(ngModel)]="form.servicioId" name="servicioId" required #svcCit="ngModel" (ngModelChange)="onServicioChange($event)">
             <option [ngValue]="0">— Seleccione servicio —</option>
             @for (servicio of serviciosFiltrados; track servicio.id) {
             <option [ngValue]="servicio.id">{{ servicio.nombre }}</option>
@@ -115,11 +130,15 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
 
         <div class="field">
           <label>Modalidad *</label>
-          <select [(ngModel)]="form.modalidad" name="modalidad" required>
-            <option value="VIRTUAL">Virtual</option>
-            <option value="PRESENCIAL">Presencial</option>
-            <option value="MIXTA">Mixta</option>
+          <select [(ngModel)]="form.modalidad" name="modalidad" required
+                  [disabled]="modalidadesDisponiblesCita.length <= 1">
+            @for (m of modalidadesDisponiblesCita; track m) {
+            <option [value]="m">{{ m === 'VIRTUAL' ? 'Virtual' : 'Presencial' }}</option>
+            }
           </select>
+          @if (modalidadesDisponiblesCita.length <= 1 && form.servicioId) {
+          <span class="field-hint">Este servicio solo se ofrece de forma {{ modalidadesDisponiblesCita[0] === 'VIRTUAL' ? 'virtual' : 'presencial' }}.</span>
+          }
         </div>
 
         <div class="field">
@@ -411,12 +430,14 @@ export class CitasPageComponent implements OnInit {
   }
 
   /**
-   * Solo el CLIENTE puede registrar una cita (a su propio nombre). El
-   * administrador no debe crear citas como cliente y el profesional
-   * gestiona solicitudes, no las crea.
+   * El CLIENTE registra una cita a su propio nombre. El ADMINISTRADOR
+   * también puede registrar citas de forma administrativa, actuando como
+   * intermediario: elige tanto el cliente como el profesional (a diferencia
+   * del cliente, que solo elige profesional, porque el cliente ya es él
+   * mismo). El profesional no crea citas, solo las gestiona.
    */
   get puedeRegistrar(): boolean {
-    return this.authService.esCliente();
+    return this.authService.esCliente() || this.esAdministrador;
   }
 
   get nombreUsuarioActual(): string {
@@ -457,6 +478,18 @@ export class CitasPageComponent implements OnInit {
     const hFin = Math.floor(totalMin / 60);
     const mFin = totalMin % 60;
     return `${hFin.toString().padStart(2, '0')}:${mFin.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Una cita puntual ocurre de una forma o de la otra, nunca "mixta". Si
+   * el servicio elegido es VIRTUAL o PRESENCIAL puro, la cita queda fija a
+   * eso; si el servicio es MIXTA, el cliente elige entre las dos.
+   */
+  get modalidadesDisponiblesCita(): Array<'VIRTUAL' | 'PRESENCIAL'> {
+    const servicio = this.serviciosFiltrados.find((s) => s.id === Number(this.form.servicioId))
+      ?? this.servicios.find((s) => s.id === Number(this.form.servicioId));
+    if (!servicio || servicio.modalidad === 'MIXTA') return ['VIRTUAL', 'PRESENCIAL'];
+    return [servicio.modalidad];
   }
 
   ngOnInit(): void {
@@ -501,6 +534,20 @@ export class CitasPageComponent implements OnInit {
       (servicio) => Number(servicio.perfilProfesionalId) === Number(this.form.perfilProfesionalId),
     );
     this.form.servicioId = 0;
+    this.ajustarModalidadCita();
+  }
+
+  onServicioChange(value: number | string): void {
+    this.form.servicioId = Number(value || 0);
+    this.ajustarModalidadCita();
+  }
+
+  /** Reajusta la modalidad de la cita si la actual ya no es válida para el servicio elegido. */
+  private ajustarModalidadCita(): void {
+    const disponibles = this.modalidadesDisponiblesCita;
+    if (!disponibles.includes(this.form.modalidad as 'VIRTUAL' | 'PRESENCIAL')) {
+      this.form.modalidad = disponibles[0];
+    }
   }
 
   cargarCitas(): void {
@@ -560,10 +607,18 @@ export class CitasPageComponent implements OnInit {
       return;
     }
 
+    // Un cliente siempre solicita a su propio nombre; el administrador
+    // elige explícitamente el cliente en el formulario.
+    const clienteId = this.esAdministrador ? Number(this.form.clienteId) : usuario.id;
+    if (this.esAdministrador && !clienteId) {
+      this.errorCita = 'Debés seleccionar un cliente.';
+      return;
+    }
+
     this.guardandoCita = true;
     const payload: CitaPayload = {
       ...this.form,
-      clienteId: usuario.id,
+      clienteId,
       perfilProfesionalId: Number(this.form.perfilProfesionalId),
       servicioId: Number(this.form.servicioId),
     };
@@ -573,7 +628,7 @@ export class CitasPageComponent implements OnInit {
         this.exitoCita = 'Cita registrada correctamente.';
         this.guardandoCita = false;
         this.form = {
-          clienteId: usuario.id,
+          clienteId: this.esAdministrador ? 0 : usuario.id,
           perfilProfesionalId: 0,
           servicioId: 0,
           fechaCita: '',

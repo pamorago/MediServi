@@ -29,6 +29,10 @@ export class ApiService {
     return this.http.patch<Usuario>(`${this.baseUrl}/usuarios/${id}/estado`, { estado });
   }
 
+  cambiarRolUsuario(id: number, rol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE'): Observable<Usuario> {
+    return this.http.put<Usuario>(`${this.baseUrl}/usuarios/${id}`, { rol });
+  }
+
   getCategorias(): Observable<Categoria[]> {
     return this.http.get<Categoria[]>(`${this.baseUrl}/categorias`);
   }

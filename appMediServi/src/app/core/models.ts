@@ -55,6 +55,12 @@ export interface HistorialCita {
   estadoNuevo: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'CANCELADA' | 'COMPLETADA';
   motivo?: string | null;
   cambiadoPorId: number;
+  cambiadoPor?: {
+    id: number;
+    nombre: string;
+    apellidos: string;
+    rol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE';
+  };
   createdAt: string;
   updatedAt: string;
 }

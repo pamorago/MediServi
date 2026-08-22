@@ -468,7 +468,8 @@ export class ProfesionalesPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.apiSvc.getEspecialidades().subscribe((data: Especialidad[]) => (this.especialidades = data));
+    // Un perfil nuevo solo puede asociarse a especialidades ACTIVAS.
+    this.apiSvc.getEspecialidadesFiltradas({ estado: 'ACTIVO' }).subscribe((data: Especialidad[]) => (this.especialidades = data));
     this.cargarProfesionales();
   }
 

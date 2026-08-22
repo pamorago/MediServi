@@ -153,7 +153,8 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
         @if (esAdministrador) {
         <div class="field">
           <label>Profesional *</label>
-          <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profSer="ngModel">
+          <select [(ngModel)]="form.perfilProfesionalId" name="perfilProfesionalId" required #profSer="ngModel"
+                  (ngModelChange)="onProfesionalFormChange()">
             <option [ngValue]="0">— Seleccione profesional —</option>
             @for (p of profesionales; track p.id) {
             <option [ngValue]="p.id">{{ p.usuario.nombre }} {{ p.usuario.apellidos }}</option>
@@ -211,11 +212,15 @@ import { Categoria, Especialidad, Profesional, Servicio, ServicioPayload } from 
 
         <div class="field">
           <label>Modalidad *</label>
-          <select [(ngModel)]="form.modalidad" name="modalidad" required>
-            <option value="VIRTUAL">Virtual</option>
-            <option value="PRESENCIAL">Presencial</option>
-            <option value="MIXTA">Mixta</option>
+          <select [(ngModel)]="form.modalidad" name="modalidad" required
+                  [disabled]="modalidadesDisponiblesServicio.length <= 1">
+            @for (m of modalidadesDisponiblesServicio; track m) {
+            <option [value]="m">{{ etiquetaModalidad(m) }}</option>
+            }
           </select>
+          @if (modalidadesDisponiblesServicio.length <= 1 && form.perfilProfesionalId) {
+          <span class="field-hint">Este servicio hereda la modalidad del profesional ({{ etiquetaModalidad(modalidadesDisponiblesServicio[0]) }}).</span>
+          }
         </div>
 
         <div class="field">
@@ -453,9 +458,36 @@ export class ServiciosPageComponent implements OnInit {
     return 'Catálogo de servicios disponibles para agendar.';
   }
 
+  /**
+   * Un servicio no puede ofrecer una modalidad que su profesional no
+   * ofrece: si el profesional es VIRTUAL o PRESENCIAL puro, el servicio
+   * queda fijo a esa modalidad; si el profesional es MIXTA, el servicio
+   * puede ser cualquiera de las tres (puede que ese servicio en particular
+   * solo se dé de una forma aunque el profesional atienda de las dos).
+   */
+  get modalidadesDisponiblesServicio(): Array<'VIRTUAL' | 'PRESENCIAL' | 'MIXTA'> {
+    const profesional = this.profesionales.find((p) => p.id === Number(this.form.perfilProfesionalId));
+    if (!profesional) return ['VIRTUAL', 'PRESENCIAL', 'MIXTA'];
+    if (profesional.modalidad === 'MIXTA') return ['VIRTUAL', 'PRESENCIAL', 'MIXTA'];
+    return [profesional.modalidad];
+  }
+
+  etiquetaModalidad(m: 'VIRTUAL' | 'PRESENCIAL' | 'MIXTA'): string {
+    return m === 'VIRTUAL' ? 'Virtual' : m === 'PRESENCIAL' ? 'Presencial' : 'Mixta';
+  }
+
+  /** Al cambiar el profesional en el formulario (admin), la modalidad del servicio se reajusta si ya no es válida. */
+  onProfesionalFormChange(): void {
+    const disponibles = this.modalidadesDisponiblesServicio;
+    if (!disponibles.includes(this.form.modalidad)) {
+      this.form.modalidad = disponibles[0];
+    }
+  }
+
   ngOnInit(): void {
-    this.api.getCategorias().subscribe((data) => (this.categorias = data));
-    this.api.getEspecialidades().subscribe((data) => (this.especialidades = data));
+    // Un servicio nuevo solo puede asociarse a categorías/especialidades ACTIVAS.
+    this.api.getCategoriasFiltradas({ estado: 'ACTIVO' }).subscribe((data) => (this.categorias = data));
+    this.api.getEspecialidadesFiltradas({ estado: 'ACTIVO' }).subscribe((data) => (this.especialidades = data));
 
     const usuario = this.authService.usuario();
     this.api.getProfesionales().subscribe((data) => {
@@ -463,6 +495,7 @@ export class ServiciosPageComponent implements OnInit {
       if (usuario && this.authService.esProfesional()) {
         this.miPerfilProfesionalId = data.find((p) => p.usuario.id === usuario.id)?.id ?? null;
         this.form.perfilProfesionalId = this.miPerfilProfesionalId ?? 0;
+        this.onProfesionalFormChange();
       }
     });
 
@@ -480,6 +513,7 @@ export class ServiciosPageComponent implements OnInit {
   irARegistrar(): void {
     if (this.authService.esProfesional() && !this.editandoId) {
       this.form.perfilProfesionalId = this.miPerfilProfesionalId ?? 0;
+      this.onProfesionalFormChange();
     }
     this.vista = 'registrar';
   }
@@ -589,6 +623,13 @@ export class ServiciosPageComponent implements OnInit {
         estado: detalle.estado,
         especialidadIds,
       };
+
+      // Si la categoría ya asociada quedó inactiva mientras tanto, la
+      // agregamos igual a la lista para no perder el valor al editar
+      // (pero no aparecerá como opción al registrar un servicio nuevo).
+      if (detalle.categoria && !this.categorias.some((c) => c.id === detalle.categoria!.id)) {
+        this.categorias = [...this.categorias, detalle.categoria];
+      }
     });
   }
 

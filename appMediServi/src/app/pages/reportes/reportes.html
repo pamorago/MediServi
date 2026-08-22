@@ -162,6 +162,7 @@
       <div class="reporte-card">
         <h2>Calificaciones de Profesionales</h2>
         @if (calificaciones() && calificaciones()!.length > 0) {
+          <p class="periodo-aplicado">Se considera "baja calificación" un servicio con promedio menor a 3.0 estrellas.</p>
           <div class="tabla-responsive">
             <table class="tabla-reportes">
               <thead>
@@ -170,6 +171,7 @@
                   <th>Calificación Promedio</th>
                   <th>Cantidad Reseñas</th>
                   <th>Mejor Servicio</th>
+                  <th>Servicios con baja calificación</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,6 +190,17 @@
                     </td>
                     <td>{{ cal.cantidadResenas }}</td>
                     <td>{{ cal.mejorServicio || 'N/A' }}</td>
+                    <td>
+                      @if (cal.serviciosBajaCalificacion && cal.serviciosBajaCalificacion.length > 0) {
+                        <div class="tags-list">
+                          @for (servicio of cal.serviciosBajaCalificacion; track servicio) {
+                            <span class="tag-baja">{{ servicio }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <span class="sin-datos-inline">Ninguno</span>
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>

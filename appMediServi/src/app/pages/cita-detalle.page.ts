@@ -4,7 +4,15 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/services/auth.service';
-import { Cita, ResenaPayload } from '../core/models';
+import { Cita, ResenaPayload, CambiarEstadoCitaPayload } from '../core/models';
+
+type NuevoEstadoCita = CambiarEstadoCitaPayload['nuevoEstado'];
+
+interface OpcionEstado {
+  value: NuevoEstadoCita;
+  label: string;
+  requiereMotivo: boolean;
+}
 
 @Component({
   selector: 'app-cita-detalle-page',
@@ -102,6 +110,13 @@ import { Cita, ResenaPayload } from '../core/models';
         </section>
         }
 
+        @if (cita.comentarioProfesional) {
+        <section class="card full-col">
+          <h3 class="section-title">Comentario del profesional</h3>
+          <p class="descripcion">{{ cita.comentarioProfesional }}</p>
+        </section>
+        }
+
         <section class="card full-col review-section">
           <h3 class="section-title">Reseña y calificación</h3>
 
@@ -147,6 +162,78 @@ import { Cita, ResenaPayload } from '../core/models';
           <p class="review-hint">La reseña solo está disponible para el cliente dueño de una cita completada.</p>
           }
         </section>
+
+        @if (puedeCambiarEstado) {
+        <section class="card full-col cambio-estado">
+          <h3 class="section-title">Cambiar estado</h3>
+
+          @if (opcionesEstado.length === 0) {
+          <p class="muted">Esta cita está en un estado final; no se permiten más cambios.</p>
+          } @else {
+          <form (ngSubmit)="cambiarEstado()" class="form-grid" novalidate>
+            <div class="field">
+              <label>Nuevo estado *</label>
+              <select [(ngModel)]="nuevoEstadoSeleccionado" name="nuevoEstado" (ngModelChange)="onNuevoEstadoChange()">
+                <option [ngValue]="null">— Seleccione un estado —</option>
+                @for (opcion of opcionesEstado; track opcion.value) {
+                <option [ngValue]="opcion.value">{{ opcion.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field full">
+              <label>Motivo {{ motivoEsObligatorio ? '*' : '(opcional)' }}</label>
+              <textarea [(ngModel)]="motivoCambio" name="motivoCambio" rows="3"
+                        placeholder="Explicá el motivo del cambio de estado..."></textarea>
+              @if (motivoEsObligatorio) {
+              <span class="field-hint">Este cambio de estado requiere indicar un motivo.</span>
+              }
+            </div>
+
+            @if (errorCambio) {
+            <div class="status-box error full">{{ errorCambio }}</div>
+            }
+            @if (exitoCambio) {
+            <div class="status-box success full">{{ exitoCambio }}</div>
+            }
+
+            <div class="full actions">
+              <button type="submit" class="primary" [disabled]="!nuevoEstadoSeleccionado || guardandoCambio">
+                {{ guardandoCambio ? 'Guardando...' : 'Confirmar cambio' }}
+              </button>
+            </div>
+          </form>
+          }
+        </section>
+        }
+
+        @if (cita.historial && cita.historial.length > 0) {
+        <section class="card full-col">
+          <h3 class="section-title">Historial de estados</h3>
+          <ul class="historial-list">
+            @for (item of cita.historial; track item.id) {
+            <li class="historial-item">
+              <div class="historial-transicion">
+                @if (item.estadoAnterior) {
+                <span class="pill" [ngClass]="estadoClass(item.estadoAnterior)">{{ item.estadoAnterior }}</span>
+                <span class="historial-flecha">→</span>
+                }
+                <span class="pill" [ngClass]="estadoClass(item.estadoNuevo)">{{ item.estadoNuevo }}</span>
+              </div>
+              <div class="historial-meta">
+                <span>{{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                @if (item.cambiadoPor) {
+                <span>por {{ item.cambiadoPor.nombre }} {{ item.cambiadoPor.apellidos }} ({{ item.cambiadoPor.rol }})</span>
+                }
+              </div>
+              @if (item.motivo) {
+              <p class="historial-motivo">{{ item.motivo }}</p>
+              }
+            </li>
+            }
+          </ul>
+        </section>
+        }
 
       </div>
 
@@ -204,6 +291,22 @@ import { Cita, ResenaPayload } from '../core/models';
     .pill.rechazada, .pill.cancelada { color:#7a1c1c; background:#fbe6e6; }
     .pill.completada { color:#2a445f; background:#e3ecf8; }
 
+    .cambio-estado { border-left: 5px solid #68a592; background: linear-gradient(165deg, #f9fdfb, #f0f8f4); }
+    .field { display:flex; flex-direction:column; gap:.3rem; }
+    .field label { font-size:.82rem; font-weight:600; color:var(--color-text); }
+    .field-hint { font-size:.78rem; color:var(--color-subtle); margin-top:.1rem; }
+    .muted { color:var(--color-subtle); font-size:.85rem; margin:0; }
+
+    .historial-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.7rem; }
+    .historial-item {
+      padding:.6rem .75rem; border:1px solid var(--color-outline);
+      border-radius:10px; background:var(--color-soft);
+    }
+    .historial-transicion { display:flex; align-items:center; gap:.4rem; margin-bottom:.35rem; }
+    .historial-flecha { color:var(--color-subtle); }
+    .historial-meta { display:flex; gap:.75rem; flex-wrap:wrap; font-size:.78rem; color:var(--color-subtle); }
+    .historial-motivo { margin:.4rem 0 0; font-size:.85rem; color:var(--color-text); }
+
     .btn-back {
       display:inline-block; padding:.45rem .9rem; border-radius:8px;
       background:var(--color-soft); border:1px solid var(--color-outline);
@@ -231,14 +334,25 @@ export class CitaDetallePageComponent implements OnInit {
   readonly puntuaciones = [1, 2, 3, 4, 5];
   resenaForm: ResenaPayload = { citaId: 0, clienteId: 0, puntuacion: 0, comentario: '' };
 
+  nuevoEstadoSeleccionado: NuevoEstadoCita | null = null;
+  motivoCambio = '';
+  errorCambio = '';
+  exitoCambio = '';
+  guardandoCambio = false;
+
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.cargarCita(id);
+    this.cargarCita();
   }
 
-  cargarCita(id: number): void {
+  /**
+   * Carga el detalle de la cita. Si no se pasa `id`, se usa el de la ruta
+   * actual; si se pasa (por ejemplo tras publicar una reseña), se recarga
+   * esa misma cita explícitamente.
+   */
+  cargarCita(id?: number): void {
+    const citaId = id ?? Number(this.route.snapshot.paramMap.get('id'));
     this.loading = true;
-    this.api.getCitaById(id).subscribe({
+    this.api.getCitaById(citaId).subscribe({
       next: (data) => {
         this.cita = data;
         const usuario = this.authService.usuario();
@@ -299,5 +413,102 @@ export class CitaDetallePageComponent implements OnInit {
       case 'COMPLETADA': return 'completada';
       default: return '';
     }
+  }
+
+  private esProfesionalAsignado(): boolean {
+    const usuario = this.authService.usuario();
+    return !!usuario && !!this.cita && this.cita.profesional?.usuario?.id === usuario.id;
+  }
+
+  private esClientePropietario(): boolean {
+    const usuario = this.authService.usuario();
+    return !!usuario && !!this.cita && (this.cita.clienteId === usuario.id || this.cita.cliente?.id === usuario.id);
+  }
+
+  /**
+   * El profesional asignado y el administrador pueden gestionar el estado
+   * de cualquier transición; el cliente dueño de la cita solo puede
+   * cancelarla (según la matriz de estados del PDF).
+   */
+  get puedeCambiarEstado(): boolean {
+    if (!this.cita) return false;
+    return this.authService.esAdmin() || this.esProfesionalAsignado() || this.esClientePropietario();
+  }
+
+  /** Opciones de "nuevo estado" disponibles según el estado actual y el rol del usuario logeado. */
+  get opcionesEstado(): OpcionEstado[] {
+    if (!this.cita) return [];
+    const estado = this.cita.estado;
+    const esAdmin = this.authService.esAdmin();
+    const esProfesional = esAdmin || this.esProfesionalAsignado();
+    const esCliente = esAdmin || this.esClientePropietario();
+    const opciones: OpcionEstado[] = [];
+
+    if (estado === 'PENDIENTE') {
+      if (esProfesional) {
+        opciones.push({ value: 'ACEPTADA', label: 'Aceptar', requiereMotivo: false });
+        opciones.push({ value: 'RECHAZADA', label: 'Rechazar', requiereMotivo: true });
+      }
+      if (esCliente) {
+        opciones.push({ value: 'CANCELADA', label: 'Cancelar', requiereMotivo: false });
+      }
+    } else if (estado === 'ACEPTADA') {
+      if (esCliente || esProfesional) {
+        opciones.push({ value: 'CANCELADA', label: 'Cancelar', requiereMotivo: true });
+      }
+      if (esProfesional) {
+        opciones.push({ value: 'COMPLETADA', label: 'Marcar como completada', requiereMotivo: false });
+      }
+    }
+
+    return opciones;
+  }
+
+  get motivoEsObligatorio(): boolean {
+    return this.opcionesEstado.find((o) => o.value === this.nuevoEstadoSeleccionado)?.requiereMotivo ?? false;
+  }
+
+  onNuevoEstadoChange(): void {
+    this.errorCambio = '';
+    this.exitoCambio = '';
+  }
+
+  cambiarEstado(): void {
+    if (!this.cita || !this.nuevoEstadoSeleccionado) return;
+    const usuario = this.authService.usuario();
+    if (!usuario) {
+      this.errorCambio = 'Tu sesión no es válida, volvé a iniciar sesión.';
+      return;
+    }
+
+    if (this.motivoEsObligatorio && !this.motivoCambio.trim()) {
+      this.errorCambio = 'Debés indicar un motivo para este cambio de estado.';
+      return;
+    }
+
+    this.errorCambio = '';
+    this.exitoCambio = '';
+    this.guardandoCambio = true;
+
+    this.api
+      .cambiarEstadoCita(this.cita.id, {
+        nuevoEstado: this.nuevoEstadoSeleccionado,
+        actorId: usuario.id,
+        actorRol: usuario.rol,
+        motivo: this.motivoCambio.trim() || undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.exitoCambio = 'Estado actualizado correctamente.';
+          this.guardandoCambio = false;
+          this.nuevoEstadoSeleccionado = null;
+          this.motivoCambio = '';
+          this.cargarCita();
+        },
+        error: (err) => {
+          this.guardandoCambio = false;
+          this.errorCambio = err?.error?.error || 'No se pudo actualizar el estado de la cita.';
+        },
+      });
   }
 }
