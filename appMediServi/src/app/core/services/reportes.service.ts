@@ -91,13 +91,15 @@ export class ReportesService {
      */
     getCitasPorProfesional(
         fechaInicio?: string,
-        fechaFin?: string
+        fechaFin?: string,
+        profesionalId?: number
     ): Observable<ReporteCitasPorProfesional[]> {
         let url = `${this.apiUrl}/citas-por-profesional`;
         const params = new URLSearchParams();
 
         if (fechaInicio) params.append('fechaInicio', fechaInicio);
         if (fechaFin) params.append('fechaFin', fechaFin);
+        if (profesionalId) params.append('profesionalId', profesionalId.toString());
 
         if (params.toString()) {
             url += '?' + params.toString();
@@ -112,12 +114,14 @@ export class ReportesService {
      * Obtener reporte de calificaciones
      */
     getCalificaciones(
-        umbralBaja?: number
+        umbralBaja?: number,
+        profesionalId?: number
     ): Observable<ReporteCalificaciones[]> {
         let url = `${this.apiUrl}/calificaciones`;
         const params = new URLSearchParams();
 
         if (umbralBaja) params.append('umbralBaja', umbralBaja.toString());
+        if (profesionalId) params.append('profesionalId', profesionalId.toString());
 
         if (params.toString()) {
             url += '?' + params.toString();

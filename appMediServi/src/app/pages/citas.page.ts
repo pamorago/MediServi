@@ -4,7 +4,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/services/auth.service';
-import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/models';
+import { Cita, CitaPayload, Profesional, Servicio } from '../core/models';
 
 @Component({
   selector: 'app-citas-page',
@@ -50,26 +50,11 @@ import { Cita, CitaPayload, Profesional, Servicio, Usuario } from '../core/model
       </div>
       <form (ngSubmit)="crearCita(formCit)" #formCit="ngForm" class="form-grid" novalidate>
 
-        @if (esAdministrador) {
-        <div class="field">
-          <label>Cliente *</label>
-          <select [(ngModel)]="form.clienteId" name="clienteId" required #cliCit="ngModel">
-            <option [ngValue]="0">— Seleccione cliente —</option>
-            @for (cliente of clientes; track cliente.id) {
-            <option [ngValue]="cliente.id">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
-            }
-          </select>
-          @if (cliCit.invalid && cliCit.touched) {
-          <span class="field-error">El cliente es obligatorio.</span>
-          }
-        </div>
-        } @else {
         <div class="field">
           <label>Cliente</label>
           <input [value]="nombreUsuarioActual" type="text" disabled />
           <span class="field-hint">Solicitás la cita a tu propio nombre.</span>
         </div>
-        }
 
         <div class="field">
           <label>Profesional *</label>
@@ -396,7 +381,6 @@ export class CitasPageComponent implements OnInit {
   vista: 'listar' | 'registrar' = 'listar';
 
   citas: Cita[] = [];
-  clientes: Usuario[] = [];
   profesionales: Profesional[] = [];
   servicios: Servicio[] = [];
   serviciosFiltrados: Servicio[] = [];
@@ -430,14 +414,13 @@ export class CitasPageComponent implements OnInit {
   }
 
   /**
-   * El CLIENTE registra una cita a su propio nombre. El ADMINISTRADOR
-   * también puede registrar citas de forma administrativa, actuando como
-   * intermediario: elige tanto el cliente como el profesional (a diferencia
-   * del cliente, que solo elige profesional, porque el cliente ya es él
-   * mismo). El profesional no crea citas, solo las gestiona.
+   * Solo el CLIENTE puede solicitar una cita, y siempre a su propio nombre.
+   * El ADMINISTRADOR no crea citas de forma administrativa (esa no es una
+   * operación permitida del sistema); solo gestiona el estado de las citas
+   * ya existentes. El profesional tampoco crea citas, solo las gestiona.
    */
   get puedeRegistrar(): boolean {
-    return this.authService.esCliente() || this.esAdministrador;
+    return this.authService.esCliente();
   }
 
   get nombreUsuarioActual(): string {
@@ -498,12 +481,6 @@ export class CitasPageComponent implements OnInit {
     const usuario = this.authService.usuario();
     if (usuario && this.authService.esCliente()) {
       this.form.clienteId = usuario.id;
-    }
-
-    if (this.esAdministrador) {
-      this.api.getUsuarios({ rol: 'CLIENTE', estado: 'ACTIVO' }).subscribe((data) => {
-        this.clientes = data;
-      });
     }
 
     this.api.getProfesionales({ disponible: 'true' }).subscribe((data) => {
@@ -607,13 +584,8 @@ export class CitasPageComponent implements OnInit {
       return;
     }
 
-    // Un cliente siempre solicita a su propio nombre; el administrador
-    // elige explícitamente el cliente en el formulario.
-    const clienteId = this.esAdministrador ? Number(this.form.clienteId) : usuario.id;
-    if (this.esAdministrador && !clienteId) {
-      this.errorCita = 'Debés seleccionar un cliente.';
-      return;
-    }
+    // Un cliente siempre solicita la cita a su propio nombre.
+    const clienteId = usuario.id;
 
     this.guardandoCita = true;
     const payload: CitaPayload = {
@@ -628,7 +600,7 @@ export class CitasPageComponent implements OnInit {
         this.exitoCita = 'Cita registrada correctamente.';
         this.guardandoCita = false;
         this.form = {
-          clienteId: this.esAdministrador ? 0 : usuario.id,
+          clienteId: usuario.id,
           perfilProfesionalId: 0,
           servicioId: 0,
           fechaCita: '',
@@ -641,8 +613,8 @@ export class CitasPageComponent implements OnInit {
         this.vista = 'listar';
         this.cargarCitas();
       },
-      error: () => {
-        this.errorCita = 'No se pudo registrar la cita.';
+      error: (err) => {
+        this.errorCita = err?.error?.error ?? 'No se pudo registrar la cita.';
         this.guardandoCita = false;
       },
     });

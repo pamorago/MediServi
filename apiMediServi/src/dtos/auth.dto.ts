@@ -26,6 +26,7 @@ export interface TokenDTO {
         email: string;
         rol: "ADMINISTRADOR" | "PROFESIONAL" | "CLIENTE";
         estado: "ACTIVO" | "INACTIVO";
+        imagenPerfil?: string | null;
     };
 }
 

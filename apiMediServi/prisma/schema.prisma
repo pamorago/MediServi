@@ -55,6 +55,7 @@ model Usuario {
   email     String        @unique @db.VarChar(150)
   password  String        @db.VarChar(255)
   telefono  String?       @db.VarChar(20)
+  imagenPerfil String?    @db.VarChar(500)
   rol       Rol           @default(CLIENTE)
   estado    EstadoUsuario @default(ACTIVO)
   createdAt DateTime      @default(now())

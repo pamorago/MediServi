@@ -63,6 +63,18 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
             <dd>₡{{ profesional.tarifaBase | number }}</dd>
             <dt>Modalidad</dt>
             <dd>{{ profesional.modalidad }}</dd>
+            <dt>Calificación</dt>
+            <dd>
+              @if (profesional.cantidadResenas) {
+              <span class="rating">
+                <span class="stars">{{ estrellas(profesional.promedioCalificacion ?? 0) }}</span>
+                {{ profesional.promedioCalificacion | number: '1.1-1' }}/5
+                <span class="muted">({{ profesional.cantidadResenas }} reseña{{ profesional.cantidadResenas !== 1 ? 's' : '' }})</span>
+              </span>
+              } @else {
+              <span class="muted">Sin calificaciones todavía</span>
+              }
+            </dd>
           </dl>
         </section>
 
@@ -180,6 +192,9 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
     .svc-meta { display:flex; gap:.6rem; align-items:center; font-size:.82rem; color:var(--color-subtle); }
 
     .muted { color:var(--color-subtle); font-size:.85rem; margin:0; }
+    .rating { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+    .rating .stars { color:#d99b1d; letter-spacing:.08em; }
+    .rating .muted { font-size:.78rem; }
     .btn-back {
       display:inline-block; padding:.45rem .9rem; border-radius:8px;
       background:var(--color-soft); border:1px solid var(--color-outline);
@@ -219,6 +234,11 @@ export class ProfesionalDetallePageComponent implements OnInit {
 
   onImgError(event: Event): void {
     (event.target as HTMLImageElement).src = this.api.getImageUrl('perfil-not-found.png');
+  }
+
+  estrellas(puntuacion: number): string {
+    const redondeado = Math.round(puntuacion);
+    return '★'.repeat(redondeado) + '☆'.repeat(5 - redondeado);
   }
 }
 

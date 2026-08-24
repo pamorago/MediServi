@@ -15,6 +15,35 @@ const crearError = (message: string, status: number) => {
   return error;
 };
 
+/**
+ * Convierte un string de fecha "YYYY-MM-DD" (lo que manda un <input type="date">)
+ * en un Date a medianoche en hora LOCAL del servidor.
+ *
+ * `new Date("YYYY-MM-DD")` interpreta ese string como medianoche UTC, no
+ * medianoche local. En una zona horaria con offset negativo (como Costa
+ * Rica, UTC-6), esa medianoche UTC ya cayó en el dia anterior en hora
+ * local, asi que cualquier `.setHours(0,0,0,0)` posterior (que usa hora
+ * local) termina fijando la fecha un dia antes de la que el usuario
+ * realmente eligio. Por eso se arma el Date directamente con año/mes/dia
+ * en lugar de parsear el string completo.
+ */
+const parsearFechaLocal = (fechaStr: string): Date => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaStr);
+  if (!match) {
+    throw crearError("La fecha de la cita no es valida", StatusCodes.BAD_REQUEST);
+  }
+
+  const [, anioStr, mesStr, diaStr] = match;
+  const fecha = new Date(Number(anioStr), Number(mesStr) - 1, Number(diaStr));
+  fecha.setHours(0, 0, 0, 0);
+
+  if (Number.isNaN(fecha.getTime())) {
+    throw crearError("La fecha de la cita no es valida", StatusCodes.BAD_REQUEST);
+  }
+
+  return fecha;
+};
+
 const parseTime = (time: string) => {
   const match = /^(\d{2}):(\d{2})$/.exec(time);
   if (!match) {
@@ -162,11 +191,7 @@ const getCitaById = async (id: number) => {
 };
 
 const createCita = async (data: CreateCitaDTO) => {
-  const fechaCita = new Date(data.fechaCita);
-  fechaCita.setHours(0, 0, 0, 0);
-  if (Number.isNaN(fechaCita.getTime())) {
-    throw crearError("La fecha de la cita no es valida", StatusCodes.BAD_REQUEST);
-  }
+  const fechaCita = parsearFechaLocal(data.fechaCita);
 
   const [cliente, profesional, servicio] = await Promise.all([
     prisma.usuario.findUnique({ where: { id: data.clienteId } }),
@@ -241,8 +266,7 @@ const updateCita = async (id: number, data: UpdateCitaDTO) => {
     throw crearError("No se puede editar una cita en estado final", StatusCodes.BAD_REQUEST);
   }
 
-  const fechaCita = data.fechaCita ? new Date(data.fechaCita) : citaActual.fechaCita;
-  fechaCita.setHours(0, 0, 0, 0);
+  const fechaCita = data.fechaCita ? parsearFechaLocal(data.fechaCita) : citaActual.fechaCita;
 
   const horaInicioString = data.horaInicio
     ? data.horaInicio
@@ -379,6 +403,8 @@ const cancelCita = async (id: number) => {
     data: { estado: "CANCELADA" },
   });
 };
+
+export { parsearFechaLocal };
 
 export default {
   getAllCitas,

@@ -14,6 +14,7 @@ import { Register } from './pages/auth/register/register';
 import { Reportes } from './pages/reportes/reportes';
 import { Unauthorized } from './pages/unauthorized/unauthorized';
 import { AgendaPage } from './pages/agenda/agenda-page';
+import { MiPerfilPageComponent } from './pages/mi-perfil.page';
 import { AuthGuard, RoleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -29,6 +30,9 @@ export const routes: Routes = [
 	// Agenda visual: disponible para cualquier rol autenticado.
 	// El propio componente decide qué citas mostrar según el rol.
 	{ path: 'agenda', component: AgendaPage, canActivate: [AuthGuard] },
+
+	// Mi perfil (datos básicos de la cuenta): disponible para cualquier rol autenticado.
+	{ path: 'mi-perfil', component: MiPerfilPageComponent, canActivate: [AuthGuard] },
 
 	// Rutas de ADMINISTRADOR
 	{

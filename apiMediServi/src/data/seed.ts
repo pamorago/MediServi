@@ -63,6 +63,10 @@ async function main() {
         email: "laura.jimenez@mediservi.com",
         password: await bcrypt.hash("Pro1234!", 10),
         telefono: "70112233",
+        // Se replica aca la misma imagen que su perfil profesional (mas
+        // abajo), para que "Mi cuenta" y el directorio publico muestren la
+        // misma foto desde el primer momento.
+        imagenPerfil: "perfil-laura.png",
         rol: "PROFESIONAL",
       },
       {
@@ -71,6 +75,7 @@ async function main() {
         email: "pedro.vargas@mediservi.com",
         password: await bcrypt.hash("Pro5678!", 10),
         telefono: "70445566",
+        imagenPerfil: "perfil-pedro.png",
         rol: "PROFESIONAL",
       },
       {
@@ -79,6 +84,7 @@ async function main() {
         email: "maria.solis@mediservi.com",
         password: await bcrypt.hash("Pro9012!", 10),
         telefono: "70778899",
+        imagenPerfil: "perfil-maria.png",
         rol: "PROFESIONAL",
       },
       {
@@ -87,6 +93,7 @@ async function main() {
         email: "jorge.ramirez@mediservi.com",
         password: await bcrypt.hash("Pro3456!", 10),
         telefono: "70661122",
+        imagenPerfil: "perfil-jorge.png",
         rol: "PROFESIONAL",
       },
       {
@@ -95,6 +102,7 @@ async function main() {
         email: "elena.quesada@mediservi.com",
         password: await bcrypt.hash("Pro7890!", 10),
         telefono: "70553344",
+        imagenPerfil: "perfil-elena.png",
         rol: "PROFESIONAL",
       },
     ],
@@ -548,6 +556,43 @@ async function main() {
     },
   });
 
+  // Cita ya COMPLETADA pero SIN reseña todavía: sirve para probar el flujo
+  // de "dejar una reseña" sin tener que esperar a que pase la hora de una
+  // cita nueva ni editar fechas a mano en la base de datos.
+  const citaCompletadaSinResena = await prisma.cita.create({
+    data: {
+      clienteId: userMap["ana@mediservi.com"],
+      servicioId: svcTerapiaGrupal.id,
+      perfilProfesionalId: perfilPedro.id,
+      fechaCita: fecha(-2),
+      horaInicio: hora(14),
+      horaFin: hora(15, 30),
+      modalidad: "PRESENCIAL",
+      montoEstimado: 18000,
+      estado: "COMPLETADA",
+      comentarioCliente: "Primera sesión grupal, buscando herramientas para manejo del estrés.",
+      comentarioProfesional: "Buena participación. Se recomienda continuar con el ciclo de sesiones.",
+    },
+  });
+
+  // Cita ACEPTADA programada para "mañana a las 6pm": permite probar el
+  // flujo de "marcar como completada" en la demo sin esperar varios días,
+  // una vez que pase esa fecha y hora.
+  const citaAceptadaProxima = await prisma.cita.create({
+    data: {
+      clienteId: userMap["carlos@mediservi.com"],
+      servicioId: svcConsultaDermatologia.id,
+      perfilProfesionalId: perfilJorge.id,
+      fechaCita: fecha(1),
+      horaInicio: hora(18),
+      horaFin: hora(18, 45),
+      modalidad: "PRESENCIAL",
+      montoEstimado: 38000,
+      estado: "ACEPTADA",
+      comentarioCliente: "Control de seguimiento de tratamiento dermatológico.",
+    },
+  });
+
   const citaPendiente5 = await prisma.cita.create({
     data: {
       clienteId: userMap["ana@mediservi.com"],
@@ -635,6 +680,27 @@ async function main() {
         estadoNuevo: "COMPLETADA",
         motivo: "Consulta finalizada con éxito.",
         cambiadoPorId: perfilLaura.usuarioId,
+      },
+      {
+        citaId: citaCompletadaSinResena.id,
+        estadoAnterior: "PENDIENTE",
+        estadoNuevo: "ACEPTADA",
+        motivo: "Psicólogo confirma cupo en la sesión grupal.",
+        cambiadoPorId: perfilPedro.usuarioId,
+      },
+      {
+        citaId: citaCompletadaSinResena.id,
+        estadoAnterior: "ACEPTADA",
+        estadoNuevo: "COMPLETADA",
+        motivo: "Sesión grupal realizada.",
+        cambiadoPorId: perfilPedro.usuarioId,
+      },
+      {
+        citaId: citaAceptadaProxima.id,
+        estadoAnterior: "PENDIENTE",
+        estadoNuevo: "ACEPTADA",
+        motivo: "Dermatólogo confirma la cita de control.",
+        cambiadoPorId: perfilJorge.usuarioId,
       },
     ],
   });

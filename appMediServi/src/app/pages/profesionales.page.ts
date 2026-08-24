@@ -15,10 +15,11 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
     <section class="card">
       <div class="module-head">
         <span class="module-id">MOD-PRO</span>
-        <h2>Profesionales</h2>
+        <h2>{{ esProfesional ? 'Mi perfil profesional' : 'Profesionales' }}</h2>
       </div>
       <p>{{ descripcionModulo }}</p>
 
+      @if (!esProfesional) {
       <div class="tabs" role="tablist">
         <button
           type="button"
@@ -41,9 +42,10 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
         </button>
         }
       </div>
+      }
     </section>
 
-    @if (pestana === 'listar') {
+    @if (pestana === 'listar' && !esProfesional) {
     <section class="card" style="margin-top:1rem">
       <div class="summary">
         <span>Total: {{ profesionales.length }}</span>
@@ -149,11 +151,11 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
     </section>
     }
 
-    @if (pestana === 'registrar' && puedeRegistrar) {
+    @if (mostrarFormulario) {
     <section class="card" style="margin-top:1rem">
       <div class="module-head">
         <span class="module-id">FORM-PRO</span>
-        <h3>{{ editandoId ? 'Editar profesional #' + editandoId : 'Registrar profesional' }}</h3>
+        <h3>{{ tituloFormulario }}</h3>
       </div>
 
       @if (formError) {
@@ -337,7 +339,9 @@ import { MapaLeafletComponent } from '../shared/mapa-leaflet.component';
           <button class="primary" type="submit" [disabled]="guardando">
             {{ guardando ? 'Guardando...' : (editandoId ? 'Guardar cambios' : 'Crear profesional') }}
           </button>
+          @if (!esProfesional) {
           <button type="button" class="btn-outline" (click)="limpiarFormulario()">Cancelar</button>
+          }
         </div>
       </form>
     </section>
@@ -463,8 +467,27 @@ export class ProfesionalesPageComponent implements OnInit {
 
   get descripcionModulo(): string {
     if (this.authService.esAdmin()) return 'Gestión de profesionales: filtros, registro y edición de perfiles.';
-    if (this.authService.esProfesional()) return 'Directorio de profesionales. Podés editar únicamente tu propio perfil.';
+    if (this.authService.esProfesional()) return 'Editá tu perfil profesional: disponibilidad, especialidades y foto.';
     return 'Directorio de profesionales disponibles para agendar una cita.';
+  }
+
+  get esProfesional(): boolean {
+    return this.authService.esProfesional();
+  }
+
+  /**
+   * Un PROFESIONAL entra directo a editar su propio perfil (sin ver el
+   * directorio completo ni la pestaña de "Listar"/"Registrar"); el
+   * ADMINISTRADOR sigue viendo el formulario solo dentro de la pestaña
+   * "Registrar"/"Editar".
+   */
+  get mostrarFormulario(): boolean {
+    return this.esProfesional || (this.pestana === 'registrar' && this.puedeRegistrar);
+  }
+
+  get tituloFormulario(): string {
+    if (this.esProfesional) return 'Mi perfil profesional';
+    return this.editandoId ? `Editar profesional #${this.editandoId}` : 'Registrar profesional';
   }
 
   ngOnInit(): void {
@@ -496,6 +519,16 @@ export class ProfesionalesPageComponent implements OnInit {
         this.todosProfesionales = data;
         this.aplicarFiltrosLocales();
         this.loading = false;
+
+        if (this.esProfesional) {
+          const usuario = this.authService.usuario();
+          const propio = data.find((p) => usuario && p.usuario.id === usuario.id);
+          if (propio) {
+            this.editar(propio, false);
+          } else {
+            this.error = 'No se encontró tu perfil profesional.';
+          }
+        }
       },
       error: () => {
         this.error = 'No se pudieron cargar los profesionales.';
@@ -556,7 +589,7 @@ export class ProfesionalesPageComponent implements OnInit {
     this.form.especialidadIds = this.especialidadesSeleccionadas.map((e) => e.id);
   }
 
-  editar(p: Profesional): void {
+  editar(p: Profesional, hacerScroll = true): void {
     if (!this.puedeGestionar(p)) return;
     this.editandoId = p.id;
     this.imagenPreview = null;
@@ -585,7 +618,9 @@ export class ProfesionalesPageComponent implements OnInit {
     // Un profesional editando su propio perfil ve el formulario aunque no
     // tenga acceso a la pestaña "Registrar" (esa sigue oculta para él).
     this.pestana = 'registrar';
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    if (hacerScroll) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
   }
 
   guardar(): void {

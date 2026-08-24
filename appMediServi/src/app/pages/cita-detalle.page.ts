@@ -457,7 +457,7 @@ export class CitaDetallePageComponent implements OnInit {
         opciones.push({ value: 'CANCELADA', label: 'Cancelar', requiereMotivo: true });
       }
       if (esProfesional) {
-        opciones.push({ value: 'COMPLETADA', label: 'Marcar como completada', requiereMotivo: false });
+        opciones.push({ value: 'COMPLETADA', label: 'Completada', requiereMotivo: false });
       }
     }
 

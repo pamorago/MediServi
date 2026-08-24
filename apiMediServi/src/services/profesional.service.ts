@@ -34,7 +34,7 @@ const getAllProfesionales = async (filters: GetProfesionalesFilters = {}) => {
 };
 
 const getProfesionalById = async (id: number) => {
-  return prisma.perfilProfesional.findUnique({
+  const perfil = await prisma.perfilProfesional.findUnique({
     where: { id },
     include: {
       usuario: true,
@@ -48,8 +48,28 @@ const getProfesionalById = async (id: number) => {
           categoria: true,
         },
       },
+      resenas: {
+        select: { puntuacion: true },
+      },
     },
   });
+
+  if (!perfil) {
+    return null;
+  }
+
+  // La calificacion promedio ya se calculaba en el reporte de admin
+  // (Calificaciones de Profesionales); tambien se expone aca para que se
+  // vea directamente en el perfil publico del profesional, no solo en
+  // reportes.
+  const cantidadResenas = perfil.resenas.length;
+  const promedioCalificacion =
+    cantidadResenas > 0
+      ? perfil.resenas.reduce((suma, r) => suma + r.puntuacion, 0) / cantidadResenas
+      : null;
+
+  const { resenas, ...resto } = perfil;
+  return { ...resto, promedioCalificacion, cantidadResenas };
 };
 
 const createProfesional = async (data: CreateProfesionalDTO) => {
@@ -61,6 +81,7 @@ const createProfesional = async (data: CreateProfesionalDTO) => {
         email: data.email,
         password: data.password,
         telefono: data.telefono,
+        imagenPerfil: data.imagenPerfil,
         rol: 'PROFESIONAL',
         estado: 'ACTIVO',
       },
@@ -109,7 +130,7 @@ const updateProfesional = async (id: number, data: UpdateProfesionalDTO) => {
   }
 
   return prisma.$transaction(async (tx) => {
-    if (data.nombre || data.apellidos || data.email || data.telefono) {
+    if (data.nombre || data.apellidos || data.email || data.telefono || data.imagenPerfil) {
       await tx.usuario.update({
         where: { id: perfilActual.usuarioId },
         data: {
@@ -117,6 +138,10 @@ const updateProfesional = async (id: number, data: UpdateProfesionalDTO) => {
           apellidos: data.apellidos,
           email: data.email,
           telefono: data.telefono,
+          // La cuenta (Usuario) tambien guarda su propia foto para mostrarla
+          // en "Mi cuenta"; se mantiene sincronizada con la que se sube
+          // desde el perfil profesional publico para que ambas coincidan.
+          imagenPerfil: data.imagenPerfil,
         },
       });
     }

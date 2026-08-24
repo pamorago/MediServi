@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
-import citaService from "../services/cita.service";
+import citaService, { parsearFechaLocal } from "../services/cita.service";
 import type { CambiarEstadoCitaDTO, CreateCitaDTO, UpdateCitaDTO } from "../dtos/cita.dto";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 
 const getCitas = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -12,11 +13,20 @@ const getCitas = async (req: Request, res: Response, next: NextFunction) => {
       fechaFin?: string;
     };
 
+    // Se usa parsearFechaLocal (en vez de `new Date(string)`) para evitar
+    // que el filtro de fecha quede un dia corrido por la diferencia entre
+    // interpretar el string como UTC vs. como hora local del servidor.
+    const fechaFinFiltro = query.fechaFin ? parsearFechaLocal(query.fechaFin) : undefined;
+    if (fechaFinFiltro) {
+      // "Hasta" debe incluir todo ese dia, no solo su medianoche.
+      fechaFinFiltro.setHours(23, 59, 59, 999);
+    }
+
     const citas = await citaService.getAllCitas({
       estado: query.estado,
       perfilProfesionalId: query.perfilProfesionalId ? Number(query.perfilProfesionalId) : undefined,
-      fechaInicio: query.fechaInicio ? new Date(query.fechaInicio) : undefined,
-      fechaFin: query.fechaFin ? new Date(query.fechaFin) : undefined,
+      fechaInicio: query.fechaInicio ? parsearFechaLocal(query.fechaInicio) : undefined,
+      fechaFin: fechaFinFiltro,
     });
     res.json(citas);
   } catch (error) {
@@ -39,9 +49,17 @@ const getCita = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const createCita = async (req: Request, res: Response, next: NextFunction) => {
+const createCita = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = req.body as CreateCitaDTO;
+    // Solo un CLIENTE puede solicitar una cita, y siempre a su propio nombre.
+    // No se confia en clienteId enviado por el body: se usa el id verificado
+    // del token (req.userId) para evitar que alguien solicite citas a nombre
+    // de otro usuario.
+    if (req.userRole !== "CLIENTE") {
+      return res.status(StatusCodes.FORBIDDEN).json({ error: "Solo un cliente puede solicitar una cita" });
+    }
+
+    const data = { ...(req.body as CreateCitaDTO), clienteId: req.userId };
 
     if (!data.clienteId || !data.servicioId || !data.perfilProfesionalId || !data.fechaCita || !data.horaInicio || !data.modalidad) {
       return res.status(StatusCodes.BAD_REQUEST).json({ error: "Todos los campos obligatorios deben ser enviados" });

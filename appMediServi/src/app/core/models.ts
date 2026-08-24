@@ -13,6 +13,7 @@ export interface Usuario {
   apellidos: string;
   email: string;
   telefono: string | null;
+  imagenPerfil?: string | null;
   rol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE';
   estado: 'ACTIVO' | 'INACTIVO';
   createdAt: string;
@@ -94,6 +95,8 @@ export interface Profesional {
     especialidad: Especialidad;
   }>;
   servicios?: Servicio[];
+  promedioCalificacion?: number | null;
+  cantidadResenas?: number;
 }
 
 export interface Servicio {
@@ -209,6 +212,7 @@ export interface CurrentUser {
   rol: 'ADMINISTRADOR' | 'PROFESIONAL' | 'CLIENTE';
   estado: 'ACTIVO' | 'INACTIVO';
   telefono?: string;
+  imagenPerfil?: string | null;
 }
 
 export interface AuthSession {

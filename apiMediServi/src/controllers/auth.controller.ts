@@ -156,12 +156,13 @@ export class AuthController {
                 return;
             }
 
-            const { nombre, apellidos, telefono } = req.body;
+            const { nombre, apellidos, telefono, imagenPerfil } = req.body;
 
             const usuario = await AuthService.updateProfile(userId, {
                 nombre,
                 apellidos,
                 telefono,
+                imagenPerfil,
             });
 
             res.status(200).json({

@@ -102,6 +102,7 @@ export class AuthService {
                 email: usuario.email,
                 rol: usuario.rol,
                 estado: usuario.estado,
+                imagenPerfil: usuario.imagenPerfil,
             },
         };
     }
@@ -149,6 +150,7 @@ export class AuthService {
                 email: newUser.email,
                 rol: newUser.rol,
                 estado: newUser.estado,
+                imagenPerfil: newUser.imagenPerfil,
             },
         };
     }
@@ -165,6 +167,7 @@ export class AuthService {
                 apellidos: true,
                 email: true,
                 telefono: true,
+                imagenPerfil: true,
                 rol: true,
                 estado: true,
                 perfil: true,
@@ -184,6 +187,7 @@ export class AuthService {
             nombre?: string;
             apellidos?: string;
             telefono?: string;
+            imagenPerfil?: string;
         }
     ) {
         const usuario = await prisma.usuario.update({
@@ -195,10 +199,23 @@ export class AuthService {
                 apellidos: true,
                 email: true,
                 telefono: true,
+                imagenPerfil: true,
                 rol: true,
                 estado: true,
             },
         });
+
+        // El perfil profesional publico (el que ven clientes y admin en el
+        // directorio y en el detalle) guarda su propia copia de la imagen,
+        // asi que hay que mantenerla sincronizada cuando el propio
+        // profesional cambia su foto desde "Mi cuenta". updateMany no falla
+        // si el usuario todavia no tiene perfil profesional (0 filas).
+        if (usuario.rol === "PROFESIONAL" && updateData.imagenPerfil) {
+            await prisma.perfilProfesional.updateMany({
+                where: { usuarioId: userId },
+                data: { imagenPerfil: updateData.imagenPerfil },
+            });
+        }
 
         return usuario;
     }

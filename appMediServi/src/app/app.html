@@ -17,6 +17,7 @@
         <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
         <a routerLink="/categorias" routerLinkActive="active">Categorías</a>
         <a routerLink="/especialidades" routerLinkActive="active">Especialidades</a>
+        <a routerLink="/profesionales" routerLinkActive="active">Profesionales</a>
         <a routerLink="/citas" routerLinkActive="active">Citas</a>
         <a routerLink="/agenda" routerLinkActive="active">Agenda</a>
         <a routerLink="/reportes" routerLinkActive="active">Reportes</a>
@@ -29,7 +30,7 @@
         <a routerLink="/citas" routerLinkActive="active">Solicitudes</a>
         <a routerLink="/agenda" routerLinkActive="active">Mi Agenda</a>
         <a routerLink="/reportes" routerLinkActive="active">Mi Reporte</a>
-        <a routerLink="/profesionales" routerLinkActive="active">Mi Perfil</a>
+        <a routerLink="/profesionales" routerLinkActive="active">Mi profesional</a>
         }
 
         <!-- Menú CLIENTE -->
@@ -50,6 +51,8 @@
     @if (authService.autenticado()) {
     <div class="user-bar">
       <span class="user-name">Hola, {{ authService.usuario()?.nombre }}</span>
+      <span class="divider" aria-hidden="true"></span>
+      <a routerLink="/mi-perfil" routerLinkActive="active">Mi cuenta</a>
       <span class="divider" aria-hidden="true"></span>
       <button (click)="logout()" class="btn-logout">Cerrar Sesión</button>
     </div>

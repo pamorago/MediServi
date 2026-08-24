@@ -126,11 +126,18 @@ export class ReportesService {
      */
     static async getCitasPorProfesional(
         fechaInicio?: string,
-        fechaFin?: string
+        fechaFin?: string,
+        profesionalId?: number
     ): Promise<ReporteCitasPorProfesional[]> {
         try {
             // Construir filtros de fecha
             const whereClause: any = {};
+
+            if (profesionalId) {
+                // El filtro de "Profesional" del reporte debe acotar esta tabla
+                // a un unico perfil, no solo el grafico de citas por estado.
+                whereClause.id = profesionalId;
+            }
 
             if (fechaInicio || fechaFin) {
                 whereClause.citas = {
@@ -196,11 +203,13 @@ export class ReportesService {
      * Obtener reporte de calificaciones
      */
     static async getCalificaciones(
-        umbralBaja: number = 3.0
+        umbralBaja: number = 3.0,
+        profesionalId?: number
     ): Promise<ReporteCalificaciones[]> {
         try {
             // Obtener profesionales con sus reseñas y servicios
             const profesionales = await prisma.perfilProfesional.findMany({
+                where: profesionalId ? { id: profesionalId } : undefined,
                 include: {
                     usuario: {
                         select: {

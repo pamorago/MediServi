@@ -162,7 +162,7 @@ export class Reportes implements OnInit {
             });
 
         if (this.puedeVerReporteProfesional()) {
-            this.reportesService.getCitasPorProfesional(fechaInicio, fechaFin).subscribe({
+            this.reportesService.getCitasPorProfesional(fechaInicio, fechaFin, profesionalId).subscribe({
                 next: (data) => {
                     this.citasPorProfesional.set(data);
                 },
@@ -173,7 +173,7 @@ export class Reportes implements OnInit {
         }
 
         if (this.puedeVerReporteCalificaciones()) {
-            this.reportesService.getCalificaciones().subscribe({
+            this.reportesService.getCalificaciones(undefined, profesionalId).subscribe({
                 next: (data) => {
                     this.calificaciones.set(data);
                 },
